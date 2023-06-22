@@ -1,0 +1,11 @@
+.DS_Store
+tmp
+log/*
+.DS_Store
+*~
+**/#*#
+.bundle/*
+.vscode/
+
+# Ignore direnv file
+.envrc
