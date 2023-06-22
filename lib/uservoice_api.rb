@@ -12,10 +12,41 @@ class UserVoiceApi
       p '-'*40
     end
 
-    @host = "https://#{ENV['UV_SUBDOMAIN']}.uservoice.com"
+    @host = "https://#{options[:subdomain]}.uservoice.com"
     @conn = connection
+    @api_key = options[:api_key]
+    @api_secret = options[:api_secret]
     @access_token = authenticate
   end
+
+  def fetch_users(cursor = nil)
+    users_params = {
+      includes: 'crm_accounts',
+      per_page: 100,
+      sort: 'created_at',
+      cursor: cursor,
+    }
+
+    users_response = get('/admin/users', users_params)
+
+    valid_users = users_response[:users].map do |user|
+      next if user[:supported_suggestions_count] == 0
+
+      if user[:links][:crm_account]
+        user[:crm_account] = users_response[:crm_accounts].find do |account|
+          account[:id] ==  user[:links][:crm_account]
+        end
+      end
+      user
+    end.compact
+
+    {
+      cursor: cursor,
+      users: valid_users,
+    }
+  end
+
+  private
 
   def authenticate
     # this operation will block until less than 120 shift calls have been made within the last minute
@@ -23,8 +54,8 @@ class UserVoiceApi
 
     body = {
       grant_type: 'client_credentials',
-      client_id: ENV['UV_API_KEY'],
-      client_secret: ENV['UV_API_SECRET']
+      client_id: @api_key,
+      client_secret: @api_secret,
     }
 
     response = post('/oauth/token', body)
