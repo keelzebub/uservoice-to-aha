@@ -5,10 +5,10 @@ require 'ruby-limiter'
 
 class UserVoiceApi
   def initialize(options = {})
-    # create a rate-limited queue which allows 120 operations per minute
-    @queue = Limiter::RateQueue.new(120, interval: 60, balanced: false) do
+    # create a rate-limited queue which allows 110 operations per minute
+    @queue = Limiter::RateQueue.new(110, interval: 60, balanced: false) do
       p '-'*40
-      p "Hit the limit, waiting"
+      p "Hit the UserVoice limit, waiting"
       p '-'*40
     end
 
@@ -27,29 +27,13 @@ class UserVoiceApi
       cursor: cursor,
     }
 
-    users_response = get('/admin/users', users_params)
-
-    valid_users = users_response[:users].map do |user|
-      next if user[:supported_suggestions_count] == 0
-
-      if user[:links][:crm_account]
-        user[:crm_account] = users_response[:crm_accounts].find do |account|
-          account[:id] ==  user[:links][:crm_account]
-        end
-      end
-      user
-    end.compact
-
-    {
-      cursor: cursor,
-      users: valid_users,
-    }
+    get('/admin/users', users_params)
   end
 
   private
 
   def authenticate
-    # this operation will block until less than 120 shift calls have been made within the last minute
+    # this operation will block until less than 110 shift calls have been made within the last minute
     @queue.shift
 
     body = {
@@ -70,7 +54,7 @@ class UserVoiceApi
   end
 
   def get(route, url_params = nil)
-    # this operation will block until less than 120 shift calls have been made within the last minute
+    # this operation will block until less than 110 shift calls have been made within the last minute
     @queue.shift
 
     begin
@@ -90,7 +74,7 @@ class UserVoiceApi
   end
 
   def post(route, body = nil)
-    # this operation will block until less than 120 shift calls have been made within the last minute
+    # this operation will block until less than 110 shift calls have been made within the last minute
     @queue.shift
 
     begin
@@ -108,8 +92,6 @@ class UserVoiceApi
       JSON.parse(response.body, symbolize_names: true)
     end
   end
-
-  private
 
   def handle_error(e)
     p '-'*40
