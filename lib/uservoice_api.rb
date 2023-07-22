@@ -32,10 +32,11 @@ class UserVoiceApi
 
   def fetch_suggestions(cursor = nil)
     users_params = {
-      includes: 'categories,labels',
+      includes: 'categories,labels,statuses',
       per_page: 100,
       sort: 'created_at',
       cursor: cursor,
+      state: '-deleted,-merged,-spam,-closed'
     }
 
     get('/admin/suggestions', users_params)
