@@ -5,8 +5,8 @@ require 'ruby-limiter'
 
 class AhaApi
   def initialize(options = {})
-    # create a rate-limited queue which allows 299 operations per minute
-    @queue = Limiter::RateQueue.new(299, interval: 60, balanced: true) do
+    # create a rate-limited queue which allows 290 operations per minute
+    @queue = Limiter::RateQueue.new(290, interval: 60, balanced: true) do
       p '-'*40
       p "Hit the Aha limit, waiting"
       p '-'*40
@@ -27,15 +27,16 @@ class AhaApi
     get('/idea_organizations', org_params)
   end
 
-  def create_idea_user(user_params)
-    {
-      email: 'hawleykc@gmail.com',
-      first_name: 'Kellen',
-      last_name: 'Hawley',
-      idea_organization_id: 7239075826802824782
-    }
+  def create_contact(user_params)
+    post('/idea_users', {
+      idea_user: user_params
+  })
+  end
 
-    post('/idea_users', user_params)
+  def create_portal_user(idea_portal_id, user_params)
+    post("/idea_portals/#{idea_portal_id}/portal_users", {
+      portal_user: user_params
+    })
   end
 
   private
@@ -48,7 +49,7 @@ class AhaApi
   end
 
   def get(route, url_params = nil)
-    # this operation will block until less than 299 shift calls have been made within the last minute
+    # this operation will block until less than 290 shift calls have been made within the last minute
     @queue.shift
 
     begin
@@ -63,11 +64,27 @@ class AhaApi
     end
   end
 
+  def post(route, body = nil)
+    # this operation will block until less than 290 shift calls have been made within the last minute
+    @queue.shift
+
+    begin
+      response = @conn.post("/api/v1#{route}") do |req|
+        req.body = body
+        req.headers['Authorization'] = "Bearer #{@api_key}"
+      end
+    rescue Faraday::ClientError => e
+      handle_error(e)
+    else
+      JSON.parse(response.body, symbolize_names: true)
+    end
+  end
+
   def handle_error(e)
     p '-'*40
     p "Error: #{e.response[:status]}"
     ap e.response
     p '-'*40
-    raise 'error'
+    raise e
   end
 end
