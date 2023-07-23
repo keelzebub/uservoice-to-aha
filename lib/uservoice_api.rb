@@ -20,18 +20,18 @@ class UserVoiceApi
   end
 
   def fetch_users(cursor = nil)
-    users_params = {
+    params = {
       includes: 'crm_accounts',
       per_page: 100,
       sort: 'created_at',
       cursor: cursor,
     }
 
-    get('/admin/users', users_params)
+    get('/admin/users', params)
   end
 
   def fetch_suggestions(cursor = nil)
-    users_params = {
+    params = {
       includes: 'categories,labels,statuses',
       per_page: 100,
       sort: 'created_at',
@@ -39,7 +39,27 @@ class UserVoiceApi
       state: '-deleted,-merged,-spam,-closed'
     }
 
-    get('/admin/suggestions', users_params)
+    get('/admin/suggestions', params)
+  end
+
+  def fetch_supporters(cursor = nil)
+    params = {
+      per_page: 100,
+      sort: 'created_at',
+      cursor: cursor,
+    }
+
+    get('/admin/supporters', params)
+  end
+
+  def fetch_comments(cursor = nil)
+    params = {
+      per_page: 100,
+      sort: 'updated_at',
+      cursor: cursor
+    }
+
+    get('/admin/comments', params)
   end
 
   private

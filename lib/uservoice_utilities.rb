@@ -1,6 +1,6 @@
 require 'csv'
 
-module UserVoiceCsv
+module UserVoiceUtilities
   #
   # Fetch all users with activity from UserVoice and write to CSV
   #
@@ -47,7 +47,7 @@ module UserVoiceCsv
   def create_uv_suggestions_csv(uv_api)
     columns = [
       {
-        name: 'uv_id',
+        name: 'suggestion_id',
         value: -> (item, _) { item[:id] }
       },
       {
@@ -111,6 +111,74 @@ module UserVoiceCsv
     ]
 
     create_uv_csv(uv_api, :suggestions, columns, {included_items: included_items})
+  end
+
+  #
+  # Fetch all supporters (votes) from UserVoice and write to CSV
+  #
+  def create_uv_supporters_csv(uv_api)
+    columns = [
+      {
+        name: 'supporter_id',
+        value: -> (item, _) { item[:id] }
+      },
+      {
+        name: 'is_subscribed',
+        value: -> (item, _) { item[:is_subscribed] }
+      },
+      {
+        name: 'created_at',
+        value: -> (item, _) { item[:created_at] }
+      },
+      {
+        name: 'created_by',
+        value: -> (item, _) { item[:links][:created_by] }
+      },
+      {
+        name: 'suggestion_id',
+        value: -> (item, _) { item[:links][:suggestion] }
+      },
+    ]
+
+    create_uv_csv(uv_api, :supporters, columns)
+  end
+
+  #
+  # Fetch all comments from UserVoice and write to CSV
+  #
+  def create_uv_comments_csv(uv_api)
+    columns = [
+      {
+        name: 'comment_id',
+        value: -> (item, _) { item[:id] }
+      },
+      {
+        name: 'body',
+        value: -> (item, _) { item[:body] }
+      },
+      {
+        name: 'created_at',
+        value: -> (item, _) { item[:created_at] }
+      },
+      {
+        name: 'state',
+        value: -> (item, _) { item[:state] }
+      },
+      {
+        name: 'is_admin_comment',
+        value: -> (item, _) { item[:is_admin_comment] }
+      },
+      {
+        name: 'created_by',
+        value: -> (item, _) { item[:links][:created_by] }
+      },
+      {
+        name: 'suggestion_id',
+        value: -> (item, _) { item[:links][:suggestion] }
+      },
+    ]
+
+    create_uv_csv(uv_api, :comments, columns)
   end
 
   #!

@@ -30,13 +30,21 @@ else
 end
 
 p 'Fetching users from UserVoice'
-UserVoiceUtilities.create_uv_users_csv(uv_api)
+# UserVoiceUtilities.create_uv_users_csv(uv_api)
 p 'Users fetched from UserVoice'
 
 
 p 'Fetching suggestions from UserVoice'
-UserVoiceUtilities.create_uv_suggestions_csv(uv_api)
+# UserVoiceUtilities.create_uv_suggestions_csv(uv_api)
 p 'Suggestions fetched from UserVoice'
+
+p 'Fetching supporters from UserVoice'
+# UserVoiceUtilities.create_uv_supporters_csv(uv_api)
+p 'Supporters fetched from UserVoice'
+
+p 'Fetching comments from UserVoice'
+# UserVoiceUtilities.create_uv_comments_csv(uv_api)
+p 'Comments fetched from UserVoice'
 
 
 
