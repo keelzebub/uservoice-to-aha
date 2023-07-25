@@ -18,24 +18,36 @@ class AhaApi
   end
 
   def fetch_organizations(page)
-    org_params = {
+    params = {
       page: page,
       per_page: 100,
       fields: 'name,custom_fields'
     }
 
-    get('/idea_organizations', org_params)
+    get('/idea_organizations', params)
   end
 
-  def create_contact(user_params)
+  def create_contact(params)
     post('/idea_users', {
-      idea_user: user_params
+      idea_user: params
   })
   end
 
-  def create_portal_user(idea_portal_id, user_params)
+  def create_portal_user(idea_portal_id, params)
     post("/idea_portals/#{idea_portal_id}/portal_users", {
-      portal_user: user_params
+      portal_user: params
+    })
+  end
+
+  def create_idea(product_id, params)
+    post("/products/#{product_id}/ideas", {
+      idea: params
+    })
+  end
+
+  def create_idea_endorsement(idea_id, params)
+    post("/ideas/#{idea_id}/endorsements", {
+      idea_endorsement: params
     })
   end
 

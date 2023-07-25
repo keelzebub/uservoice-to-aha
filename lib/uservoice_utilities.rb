@@ -131,6 +131,10 @@ module UserVoiceUtilities
         value: -> (item, _) { item[:created_at] }
       },
       {
+        name: 'importance_score',
+        value: -> (item, _) { item[:importance_score] }
+      },
+      {
         name: 'created_by',
         value: -> (item, _) { item[:links][:created_by] }
       },

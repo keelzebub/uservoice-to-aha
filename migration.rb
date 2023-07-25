@@ -46,7 +46,10 @@ p 'Fetching comments from UserVoice'
 # UserVoiceUtilities.create_uv_comments_csv(uv_api)
 p 'Comments fetched from UserVoice'
 
-
-
-p 'Starting creation of Aha Idea users'
+p 'Starting creation of Aha users'
 # AhaUtilities.create_aha_contacts(aha_api, ENV['AHA_IDEA_PORTAL_ID'])
+p 'Finished creating Aha users'
+
+p 'Starting creation of Aha ideas'
+# AhaUtilities.create_aha_ideas(aha_api, ENV['AHA_PRODUCT_ID'])
+p 'Finished creating Aha ideas'
