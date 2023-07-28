@@ -62,6 +62,16 @@ class UserVoiceApi
     get('/admin/comments', params)
   end
 
+  def fetch_feedback_records(cursor = nil)
+    params = {
+      per_page: 100,
+      sort: 'created_at',
+      cursor: cursor,
+    }
+
+    get('/admin/feedback_records', params)
+  end
+
   private
 
   def authenticate

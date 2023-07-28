@@ -33,7 +33,6 @@ p 'Fetching users from UserVoice'
 # UserVoiceUtilities.create_uv_users_csv(uv_api)
 p 'Users fetched from UserVoice'
 
-
 p 'Fetching suggestions from UserVoice'
 # UserVoiceUtilities.create_uv_suggestions_csv(uv_api)
 p 'Suggestions fetched from UserVoice'
@@ -46,6 +45,10 @@ p 'Fetching comments from UserVoice'
 # UserVoiceUtilities.create_uv_comments_csv(uv_api)
 p 'Comments fetched from UserVoice'
 
+p 'Fetching feedback records from UserVoice'
+# UserVoiceUtilities.create_uv_feedback_records_csv(uv_api)
+p 'Feedback records fetched from UserVoice'
+
 p 'Starting creation of Aha users'
 # AhaUtilities.create_aha_contacts(aha_api, ENV['AHA_IDEA_PORTAL_ID'])
 p 'Finished creating Aha users'
@@ -53,3 +56,11 @@ p 'Finished creating Aha users'
 p 'Starting creation of Aha ideas'
 # AhaUtilities.create_aha_ideas(aha_api, ENV['AHA_PRODUCT_ID'])
 p 'Finished creating Aha ideas'
+
+p 'Starting creation of Aha endorsements (votes)'
+# AhaUtilities.create_aha_endorsements(aha_api, ENV['AHA_PRODUCT_ID'])
+p 'Finished creating Aha endorsements (votes)'
+
+p 'Starting creation of Aha proxy endorsements (proxy votes)'
+# AhaUtilities.create_aha_proxy_endorsements(aha_api, ENV['AHA_PRODUCT_ID'])
+p 'Finished creating Aha proxy endorsements (proxy votes)'

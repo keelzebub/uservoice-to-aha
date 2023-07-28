@@ -185,6 +185,46 @@ module UserVoiceUtilities
     create_uv_csv(uv_api, :comments, columns)
   end
 
+  #
+  # Fetch all feedback records (proxy votes) from UserVoice and write to CSV
+  #
+  def create_uv_feedback_records_csv(uv_api)
+    columns = [
+      {
+        name: 'feedback_record_id',
+        value: -> (item, _) { item[:id] }
+      },
+      {
+        name: 'body',
+        value: -> (item, _) { item[:body] }
+      },
+      {
+        name: 'created_at',
+        value: -> (item, _) { item[:created_at] }
+      },
+      {
+        name: 'sf_id',
+        value: -> (item, _) { item[:source_guid] }
+      },
+      {
+        name: 'sf_url',
+        value: -> (item, _) { item[:source_url] }
+      },
+      {
+        name: 'created_by',
+        value: -> (item, _) { item[:links][:created_by] }
+      },
+      {
+        name: 'suggestion_id',
+        value: -> (item, _) { item[:links][:suggestions][0] }
+      },
+    ]
+
+    skip_feedback_record = -> (item) { item[:source_type] != 'sfdc' && item[:links][:suggestion] }
+
+    create_uv_csv(uv_api, :feedback_records, columns, { skip_option: skip_feedback_record })
+  end
+
   #!
   #! PRIVATE FUNCTIONS
   #!
