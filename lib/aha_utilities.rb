@@ -76,6 +76,8 @@ module AhaUtilities
       created_users_email << row['email']
       created_users_csv << [row['id'], row['email'], contact_id, portal_user_id]
     end
+
+    created_users_csv.close
   end
 
   #
@@ -85,8 +87,8 @@ module AhaUtilities
     user_map = create_user_email_map
 
     # Check if we left off somewhere
-    if !File.exists?('./tmp/created_ideas.csv')
-      CSV.open('./tmp/created_ideas.csv', 'w') do |csv|
+    if !File.exists?('./tmp/created_suggestions.csv')
+      CSV.open('./tmp/created_suggestions.csv', 'w') do |csv|
         csv << ['uv_suggestion_id', 'aha_idea_id']
       end
     end
@@ -99,12 +101,12 @@ module AhaUtilities
       next if created_suggestions.include?(row['suggestion_id'])
 
       # TODO: figure out status and category mapping
-      workflow_status = 'pending'
+      workflow_status = 'New'
       categories = 'Classy'
 
       idea_params = {
         name: row['title'],
-        description: row['title'],
+        description: row['body'],
         workflow_status: workflow_status,
         categories: categories,
         created_by: user_map[row['created_by']],
@@ -112,12 +114,21 @@ module AhaUtilities
         visibility: 'public',
       }
 
-      response = aha_api.create_idea(idea_params)
+      response = aha_api.create_idea(product_id, idea_params)
       idea_id = response[:idea][:id]
+
+      endorsement_params = {
+        email: user_map[row['created_by']],
+        created_at: row['created_at']
+      }
+
+      aha_api.create_idea_endorsement(idea_id, endorsement_params)
 
       created_suggestions << row['suggestion_id']
       created_suggestions_csv << [row['suggestion_id'], idea_id]
     end
+
+    created_suggestions_csv.close
   end
 
   #
@@ -146,7 +157,8 @@ module AhaUtilities
         portal_user: {
           id: user_map[row['created_by']],
         },
-        body: row['body']
+        body: row['body'],
+        created_at: row['created_at']
       }
 
       response = aha_api.create_comment(idea_map[row['suggestion_id']], comment_params)
@@ -155,6 +167,8 @@ module AhaUtilities
       created_comments << row['comment_id']
       created_comments_csv << [row['comment_id'], comment_id]
     end
+
+    created_comments_csv.close
   end
 
   #
@@ -184,15 +198,18 @@ module AhaUtilities
 
       endorsement_params = {
         email: user_map[row['created_by']],
+        created_at: row['created_at']
         # weight: weight,
       }
 
-      response = aha_api.create_endorsement(idea_map[row['suggestion_id']], endorsement_params)
+      response = aha_api.create_idea_endorsement(idea_map[row['suggestion_id']], endorsement_params)
       idea_endorsement_id = response[:idea_endorsement][:id]
 
       created_supporters << row['supporter_id']
       created_supporters_csv << [row['supporter_id'], idea_endorsement_id]
     end
+
+    created_supporters_csv.close
   end
 
   #
@@ -223,15 +240,18 @@ module AhaUtilities
         idea_organization_id: org_map[row['sf_id']].to_i,
         link: row['sf_url'],
         description: row['body'],
-        contacts: user_map[row['user_id']]
+        contacts: user_map[row['user_id']],
+        created_at: row['created_at']
       }
 
-      response = aha_api.create_endorsement(idea_map[row['suggestion_id']], endorsement_params)
+      response = aha_api.create_idea_endorsement(idea_map[row['suggestion_id']], endorsement_params)
       idea_endorsement_id = response[:idea_endorsement][:id]
 
       created_feedback_records << row['feedback_record_id']
       created_feedback_records_csv << [row['feedback_record_id'], idea_endorsement_id]
     end
+
+    created_feedback_records_csv.close
   end
 
   #!
@@ -281,7 +301,7 @@ module AhaUtilities
   #
   def create_idea_map
     idea_map = {}
-    idea_csv = CSV.read('./tmp/created_ideas.csv', headers: true)
+    idea_csv = CSV.read('./tmp/created_suggestions.csv', headers: true)
     idea_csv.each do |row|
       idea_map[row['uv_suggestion_id']] = row['aha_idea_id']
     end

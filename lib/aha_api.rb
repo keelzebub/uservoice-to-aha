@@ -34,11 +34,11 @@ class AhaApi
   end
 
   def get_contact(email)
-    get("/idea_users?email=#{email}")
+    get('/idea_users', {email: email})
   end
 
   def get_portal_user(idea_portal_id, email)
-    get("/idea_portals/#{idea_portal_id}/portal_users?email=#{email}")
+    get("/idea_portals/#{idea_portal_id}/portal_users", {email: email})
   end
 
   def create_portal_user(idea_portal_id, params)
@@ -101,13 +101,14 @@ class AhaApi
       end
     rescue Faraday::BadRequestError => e
       response_body = JSON.parse(e.response[:body], symbolize_names: true)
+      error_message = response_body[:errors].nil? ? response_body[:error] : response_body[:errors][:message]
 
-      if response_body[:errors][:message] != 'Email A contact already exists with this email' &&
-         response_body[:errors][:message] != 'Email A portal user already exists with this email'
-        handle_error(e)
+      if error_message == 'Email A contact already exists with this email' ||
+          error_message == 'Email A portal user already exists with this email'
+        return 'already created'
       end
 
-      return 'already created'
+      handle_error(e)
     rescue Faraday::ClientError => e
       handle_error(e)
     else

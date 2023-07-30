@@ -57,9 +57,9 @@ p 'Starting creation of Aha ideas'
 AhaUtilities.create_aha_ideas(aha_api, ENV['AHA_PRODUCT_ID'])
 p 'Finished creating Aha ideas'
 
-p 'Starting creation of Aha ideas'
+p 'Starting creation of Aha idea comments'
 AhaUtilities.create_aha_comments(aha_api)
-p 'Finished creating Aha ideas'
+p 'Finished creating Aha comments'
 
 p 'Starting creation of Aha endorsements (votes)'
 AhaUtilities.create_aha_endorsements(aha_api)
