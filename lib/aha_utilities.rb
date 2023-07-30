@@ -30,7 +30,7 @@ module AhaUtilities
   #
   # Create Aha Users
   #
-  def create_aha_users(aha_api, idea_portal_id)
+  def create_aha_contacts(aha_api, idea_portal_id)
     org_map = create_org_map
 
     # Check if we left off somewhere
@@ -55,25 +55,26 @@ module AhaUtilities
         verified: true,
       }
 
-      begin
-        users_response = aha_api.create_contact(user_params)
-        contact_id = users_response[:idea_user][:id]
-      rescue Faraday::BadRequestError => e
-        response_body = JSON.parse(e.response[:body], symbolize_names: true)
-        if response_body[:errors][:message] != 'Email A contact already exists with this email'
-          raise e
-        end
+      users_response = aha_api.create_contact(user_params)
 
-        contact_id = nil
+      if users_response == 'already created'
+        users_response = aha_api.get_contact(row['email'])
+        contact_id = users_response[:idea_users][0][:id]
+      else
+        contact_id = users_response[:idea_user][:id]
       end
 
       portal_user_response = aha_api.create_portal_user(idea_portal_id, user_params)
-      portal_user_id = portal_user_response[:portal_user][:id]
+
+      if portal_user_response == 'already created'
+        portal_user_response = aha_api.get_portal_user(idea_portal_id, row['email'])
+        portal_user_id = portal_user_response[:portal_users][0][:id]
+      else
+        portal_user_id = portal_user_response[:portal_user][:id]
+      end
 
       created_users_email << row['email']
       created_users_csv << [row['id'], row['email'], contact_id, portal_user_id]
-
-      break
     end
   end
 
@@ -81,7 +82,7 @@ module AhaUtilities
   # Create Aha Ideas
   #
   def create_aha_ideas(aha_api, product_id)
-    user_map = create_user_map
+    user_map = create_user_email_map
 
     # Check if we left off somewhere
     if !File.exists?('./tmp/created_ideas.csv')
@@ -98,8 +99,8 @@ module AhaUtilities
       next if created_suggestions.include?(row['suggestion_id'])
 
       # TODO: figure out status and category mapping
-      # workflow_status = 'pending'
-      # categories = 'Classy'
+      workflow_status = 'pending'
+      categories = 'Classy'
 
       idea_params = {
         name: row['title'],
@@ -120,10 +121,48 @@ module AhaUtilities
   end
 
   #
+  # Create comments on Aha Ideas
+  #
+  def create_aha_comments(aha_api)
+    user_map = create_user_portal_id_map
+    idea_map = create_idea_map
+
+    # Check if we left off somewhere
+    if !File.exists?('./tmp/created_comments.csv')
+      CSV.open('./tmp/created_comments.csv', 'w') do |csv|
+        csv << ['uv_comment_id', 'aha_comment_id']
+      end
+    end
+
+    created_comments = CSV.read('./tmp/created_comments.csv', headers: true).map { |row| row['uv_comment_id'] }
+    created_comments_csv = CSV.open('./tmp/created_comments.csv', 'a')
+
+    # Start parsing through comments starting at the top
+    CSV.read('./tmp/all_comments.csv', headers: true).each_with_index do |row, index|
+      next if created_comments.include?(row['comment_id'])
+
+      comment_params = {
+        idea_id: idea_map[row['suggestion_id']],
+        portal_user: {
+          id: user_map[row['created_by']],
+        },
+        body: row['body']
+      }
+
+      response = aha_api.create_comment(idea_map[row['suggestion_id']], comment_params)
+      comment_id = response[:idea_comment][:id]
+
+      created_comments << row['comment_id']
+      created_comments_csv << [row['comment_id'], comment_id]
+    end
+  end
+
+  #
   # Create supporters/endorsements (votes) on Aha Ideas
   #
-  def create_aha_endorsements
-    user_map = create_user_map
+  def create_aha_endorsements(aha_api)
+    user_map = create_user_email_map
+    idea_map = create_idea_map
 
     # Check if we left off somewhere
     if !File.exists?('./tmp/created_supporters.csv')
@@ -152,15 +191,15 @@ module AhaUtilities
       idea_endorsement_id = response[:idea_endorsement][:id]
 
       created_supporters << row['supporter_id']
-      created_supporters_csv << [row['supporter_id'], idea_endorsement]
+      created_supporters_csv << [row['supporter_id'], idea_endorsement_id]
     end
   end
 
   #
   # Create feedback records/endorsements (proxy votes) on Aha Ideas
   #
-  def create_aha_proxy_endorsements
-    user_map = create_user_map
+  def create_aha_proxy_endorsements(aha_api)
+    user_map = create_user_email_map
     org_map = create_org_map
     idea_map = create_idea_map
 
@@ -182,14 +221,16 @@ module AhaUtilities
       endorsement_params = {
         email: user_map[row['created_by']],
         idea_organization_id: org_map[row['sf_id']].to_i,
-        link: row['sf_url']
+        link: row['sf_url'],
+        description: row['body'],
+        contacts: user_map[row['user_id']]
       }
 
       response = aha_api.create_endorsement(idea_map[row['suggestion_id']], endorsement_params)
       idea_endorsement_id = response[:idea_endorsement][:id]
 
       created_feedback_records << row['feedback_record_id']
-      created_feedback_records_csv << [row['feedback_record_id'], idea_endorsement]
+      created_feedback_records_csv << [row['feedback_record_id'], idea_endorsement_id]
     end
   end
 
@@ -199,13 +240,25 @@ module AhaUtilities
   private
 
   #
-  # Create map of UV user id -> Aha portal user id
+  # Create map of UV user id -> email
   #
-  def create_user_map
+  def create_user_email_map
     user_map = {}
     user_csv = CSV.read('./tmp/created_users.csv', headers: true)
-    user_csv.read.each do |row|
+    user_csv.each do |row|
       user_map[row['uv_user_id']] = row['email']
+    end
+    user_map
+  end
+
+  #
+  # Create map of UV user id -> Aha portal user id
+  #
+  def create_user_portal_id_map
+    user_map = {}
+    user_csv = CSV.read('./tmp/created_users.csv', headers: true)
+    user_csv.each do |row|
+      user_map[row['uv_user_id']] = row['aha_portal_user_id']
     end
     user_map
   end
@@ -216,10 +269,11 @@ module AhaUtilities
   def create_org_map
     org_map = {}
     org_csv = CSV.read('./tmp/organizations.csv', headers: true)
-    org_csv.read.each do |row|
+    org_csv.each do |row|
       next if row['sf_id'] == ''
       org_map[row['sf_id']] = row['uv_org_id']
     end
+    org_map
   end
 
   #
@@ -228,8 +282,9 @@ module AhaUtilities
   def create_idea_map
     idea_map = {}
     idea_csv = CSV.read('./tmp/created_ideas.csv', headers: true)
-    idea_csv.read.each do |row|
+    idea_csv.each do |row|
       idea_map[row['uv_suggestion_id']] = row['aha_idea_id']
     end
+    idea_map
   end
 end

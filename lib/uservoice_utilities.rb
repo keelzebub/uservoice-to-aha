@@ -215,6 +215,10 @@ module UserVoiceUtilities
         value: -> (item, _) { item[:links][:created_by] }
       },
       {
+        name: 'user_id',
+        value: -> (item, _) { item[:links][:user] }
+      },
+      {
         name: 'suggestion_id',
         value: -> (item, _) { item[:links][:suggestions][0] }
       },

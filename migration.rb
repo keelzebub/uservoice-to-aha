@@ -50,17 +50,21 @@ p 'Fetching feedback records from UserVoice'
 p 'Feedback records fetched from UserVoice'
 
 p 'Starting creation of Aha users'
-# AhaUtilities.create_aha_contacts(aha_api, ENV['AHA_IDEA_PORTAL_ID'])
+AhaUtilities.create_aha_contacts(aha_api, ENV['AHA_IDEA_PORTAL_ID'])
 p 'Finished creating Aha users'
 
 p 'Starting creation of Aha ideas'
-# AhaUtilities.create_aha_ideas(aha_api, ENV['AHA_PRODUCT_ID'])
+AhaUtilities.create_aha_ideas(aha_api, ENV['AHA_PRODUCT_ID'])
+p 'Finished creating Aha ideas'
+
+p 'Starting creation of Aha ideas'
+AhaUtilities.create_aha_comments(aha_api)
 p 'Finished creating Aha ideas'
 
 p 'Starting creation of Aha endorsements (votes)'
-# AhaUtilities.create_aha_endorsements(aha_api, ENV['AHA_PRODUCT_ID'])
+AhaUtilities.create_aha_endorsements(aha_api)
 p 'Finished creating Aha endorsements (votes)'
 
 p 'Starting creation of Aha proxy endorsements (proxy votes)'
-# AhaUtilities.create_aha_proxy_endorsements(aha_api, ENV['AHA_PRODUCT_ID'])
+AhaUtilities.create_aha_proxy_endorsements(aha_api)
 p 'Finished creating Aha proxy endorsements (proxy votes)'

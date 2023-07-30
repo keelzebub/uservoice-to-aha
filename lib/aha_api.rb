@@ -33,6 +33,14 @@ class AhaApi
   })
   end
 
+  def get_contact(email)
+    get("/idea_users?email=#{email}")
+  end
+
+  def get_portal_user(idea_portal_id, email)
+    get("/idea_portals/#{idea_portal_id}/portal_users?email=#{email}")
+  end
+
   def create_portal_user(idea_portal_id, params)
     post("/idea_portals/#{idea_portal_id}/portal_users", {
       portal_user: params
@@ -42,6 +50,12 @@ class AhaApi
   def create_idea(product_id, params)
     post("/products/#{product_id}/ideas", {
       idea: params
+    })
+  end
+
+  def create_comment(idea_id, params)
+    post("/ideas/#{idea_id}/idea_comments", {
+      idea_comment: params
     })
   end
 
@@ -60,7 +74,7 @@ class AhaApi
     end
   end
 
-  def get(route, url_params = nil)
+  def get(route, url_params = {})
     # this operation will block until less than 290 shift calls have been made within the last minute
     @queue.shift
 
@@ -85,6 +99,15 @@ class AhaApi
         req.body = body
         req.headers['Authorization'] = "Bearer #{@api_key}"
       end
+    rescue Faraday::BadRequestError => e
+      response_body = JSON.parse(e.response[:body], symbolize_names: true)
+
+      if response_body[:errors][:message] != 'Email A contact already exists with this email' &&
+         response_body[:errors][:message] != 'Email A portal user already exists with this email'
+        handle_error(e)
+      end
+
+      return 'already created'
     rescue Faraday::ClientError => e
       handle_error(e)
     else
