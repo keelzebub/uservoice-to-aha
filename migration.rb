@@ -1,4 +1,6 @@
 require 'awesome_print'
+require 'yaml'
+
 require './lib/aha_api.rb'
 require './lib/aha_utilities.rb'
 require './lib/uservoice_api.rb'
@@ -7,18 +9,20 @@ require './lib/uservoice_utilities.rb'
 include AhaUtilities
 include UserVoiceUtilities
 
+config = YAML.load_file("./config.yml")
+
 # Initialize UserVoice
 uv_options = {
-  api_key: ENV['UV_API_KEY'],
-  api_secret: ENV['UV_API_SECRET'],
-  subdomain: ENV['UV_SUBDOMAIN'],
+  api_key: config['uv_api_key'],
+  api_secret: config['uv_api_secret'],
+  subdomain: config['uv_subdomain'],
 }
 uv_api = UserVoiceApi.new(uv_options)
 
 # Initialize Aha
 aha_options = {
-  api_key: ENV['AHA_API_KEY'],
-  subdomain: ENV['AHA_SUBDOMAIN'],
+  api_key: config['aha_api_key'],
+  subdomain: config['aha_subdomain'],
 }
 aha_api = AhaApi.new(aha_options)
 
@@ -50,11 +54,11 @@ p 'Fetching feedback records from UserVoice'
 p 'Feedback records fetched from UserVoice'
 
 p 'Starting creation of Aha users'
-AhaUtilities.create_aha_contacts(aha_api, ENV['AHA_IDEA_PORTAL_ID'])
+AhaUtilities.create_aha_contacts(aha_api, config['aha_idea_portal_id'])
 p 'Finished creating Aha users'
 
 p 'Starting creation of Aha ideas'
-AhaUtilities.create_aha_ideas(aha_api, ENV['AHA_PRODUCT_ID'])
+AhaUtilities.create_aha_ideas(aha_api, config['aha_product_id'])
 p 'Finished creating Aha ideas'
 
 p 'Starting creation of Aha idea comments'

@@ -6,3 +6,5 @@ This script migrates ideas from UserVoice to Aha along with contacts and Salesfo
   - Pull the Charity ID to link them to the appropriate Aha Organization
 2. Migrate the UserVoice ideas
   - Maintain link to Salesforce
+
+  https://developer.salesforce.com/docs/atlas.en-us.api_rest.meta/api_rest/quickstart_oauth.htm?q=auth
