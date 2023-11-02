@@ -36,7 +36,7 @@ module MigrationUtilities
     # Check if we left off somewhere
     if !File.exists?('./tmp/created_users.csv')
       CSV.open('./tmp/created_users.csv', 'w') do |csv|
-        csv << ['uv_user_id', 'email', 'aha_contact_id', 'aha_portal_user_id', 'sf_id']
+        csv << ['uv_user_id', 'email', 'aha_contact_id', 'aha_portal_user_id', 'sf_org_id']
       end
     end
 
@@ -84,7 +84,7 @@ module MigrationUtilities
   # Create Aha Ideas
   #
   def create_aha_sf_ideas(aha_api, sf_api, product_id)
-    user_map = create_user_email_map
+    user_map = create_user_map
 
     # Check if we left off somewhere
     if !File.exists?('./tmp/created_ideas.csv')
@@ -110,16 +110,16 @@ module MigrationUtilities
         description: row['body'],
         workflow_status: workflow_status,
         categories: categories,
-        created_by: user_map[row['created_by']],
+        created_by: user_map[row['created_by']][:email],
         created_at: row['created_at'],
         visibility: 'public',
       }
 
       aha_response = aha_api.create_idea(product_id, aha_idea_params)
-      idea_id = response[:idea][:id]
+      idea_id = aha_response[:idea][:id]
 
       endorsement_params = {
-        email: user_map[row['created_by']],
+        email: user_map[row['created_by']][:email],
         created_at: row['created_at']
       }
 
@@ -127,7 +127,7 @@ module MigrationUtilities
 
       # Create the idea in SF
       sf_idea_params = {
-        Name: row['title'].truncate(80),
+        Name: row['title'][0..80],
         ahaapp__ReferenceNum__c: aha_response[:idea][:reference_num],
         ahaapp__Status__c: aha_response[:idea][:workflow_status][:name],
       }
@@ -145,7 +145,7 @@ module MigrationUtilities
   # Create comments on Aha Ideas
   #
   def create_aha_comments(aha_api)
-    user_map = create_user_portal_id_map
+    user_map = create_user_map
     idea_map = create_idea_map
 
     # Check if we left off somewhere
@@ -165,7 +165,7 @@ module MigrationUtilities
       comment_params = {
         idea_id: idea_map[row['suggestion_id']][:aha_idea_id],
         portal_user: {
-          id: user_map[row['created_by']],
+          id: user_map[row['created_by']][:aha_portal_user_id],
         },
         body: row['body'],
         created_at: row['created_at']
@@ -185,7 +185,7 @@ module MigrationUtilities
   # Create supporters/endorsements (votes) on Aha Ideas
   #
   def create_aha_endorsements(aha_api)
-    user_map = create_user_email_map
+    user_map = create_user_map
     idea_map = create_idea_map
 
     # Check if we left off somewhere
@@ -207,7 +207,7 @@ module MigrationUtilities
       # weight = 3 if row['importance_score'] == 'Critical'
 
       endorsement_params = {
-        email: user_map[row['created_by']],
+        email: user_map[row['created_by']][:email],
         created_at: row['created_at']
         # weight: weight,
       }
@@ -226,7 +226,7 @@ module MigrationUtilities
   # Create feedback records/endorsements (proxy votes) on Aha Ideas
   #
   def create_aha_sf_proxy_endorsements(aha_api, sf_api, default_sf_user_id, sf_subdomain)
-    user_map = create_user_email_map
+    user_map = create_user_map
     org_map = create_org_map
     idea_map = create_idea_map
 
@@ -247,27 +247,27 @@ module MigrationUtilities
 
       # Create the endorsement in Aha
       endorsement_params = {
-        email: user_map[row['created_by']],
+        email: user_map[row['created_by']][:email],
         idea_organization_id: org_map[row['sf_id']].to_i,
         link: row['sf_url'],
         description: row['body'],
-        contacts: user_map[row['user_id']],
+        contacts: user_map[row['user_id']][:email],
         created_at: row['created_at']
       }
 
       response = aha_api.create_idea_endorsement(idea_map[row['suggestion_id']][:aha_idea_id], endorsement_params)
       idea_endorsement_id = response[:idea_endorsement][:id]
 
-      sf_user_id = sf_api.fetch_user_id(user_map[row['user_id']])
+      sf_user_id = sf_api.fetch_user_id(user_map[row['user_id']][:email])
 
       # Create the Ideas/SF Account link
       sf_link_params = {
         ahaapp__LinkedBy__c: sf_user_id || default_sf_user_id,
-        ahaapp__AhaIdea__c: sf_response[:id],
+        ahaapp__AhaIdea__c: idea_map[row['suggestion_id']][:sf_idea_id],
         ahaapp__Account__c: row['sf_id']
       }
 
-      sf_api.create_aha_idea_link(sf_idea_params)
+      sf_api.create_aha_idea_link(sf_link_params)
 
       sf_account_name = sf_api.fetch_org_name(row['sf_id'])
 
@@ -280,7 +280,7 @@ module MigrationUtilities
         {name: 'base_url', value: "https://#{sf_subdomain}.my.salesforce.com"},
       ]
 
-      aha.create_endorsement_integration_fields(idea_endorsement_id, aha_integration_params)
+      aha_api.create_endorsement_integration_fields(idea_endorsement_id, aha_integration_params)
 
       created_proxy_endorsements << row['feedback_record_id']
       created_proxy_endorsements_csv << [row['feedback_record_id'], idea_endorsement_id]
@@ -295,30 +295,6 @@ module MigrationUtilities
   private
 
   #
-  # Create map of UV user id -> email
-  #
-  def create_user_email_map
-    user_map = {}
-    user_csv = CSV.read('./tmp/created_users.csv', headers: true)
-    user_csv.each do |row|
-      user_map[row['uv_user_id']] = row['email']
-    end
-    user_map
-  end
-
-  #
-  # Create map of UV user id -> Aha portal user id
-  #
-  def create_user_portal_id_map
-    user_map = {}
-    user_csv = CSV.read('./tmp/created_users.csv', headers: true)
-    user_csv.each do |row|
-      user_map[row['uv_user_id']] = row['aha_portal_user_id']
-    end
-    user_map
-  end
-
-  #
   # Create map of UV user id -> user details
   #
   def create_user_map
@@ -326,7 +302,10 @@ module MigrationUtilities
     user_csv = CSV.read('./tmp/created_users.csv', headers: true)
     user_csv.each do |row|
       user_map[row['uv_user_id']] = {
+        aha_contact_id: row['aha_contact_id'],
         aha_portal_user_id: row['aha_portal_user_id'],
+        email: row['email'],
+        sf_org_id: row['sf_org_id'],
       }
     end
     user_map

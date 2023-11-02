@@ -33,7 +33,7 @@ sf_options = {
   access_token: config['sf_access_token'],
   subdomain: config['sf_subdomain'],
 }
-sf_api = SalesforceApi.new(aha_options)
+sf_api = SalesforceApi.new(sf_options)
 
 if !File.exists?('./tmp/org_fetch_status.tmp')
   p 'Fetching organizations from Aha'

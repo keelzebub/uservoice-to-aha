@@ -18,11 +18,11 @@ class SalesforceApi
   end
 
   def create_idea(params)
-    post('/ahaapp__AhaIdea__c', params)
+    post('/sobjects/ahaapp__AhaIdea__c', params)
   end
 
   def fetch_user_id(email)
-    response = post('/query', {q: "SELECT%20email,%20id%20FROM%20User%20WHERE%20email%20=%20'#{email}'"})
+    response = get('/query', {q: "SELECT email, id FROM User WHERE email = '#{email}'"})
 
     if response[:records].length > 0
       response[:records][0][:Id]
@@ -32,7 +32,7 @@ class SalesforceApi
   end
 
   def fetch_org_name(id)
-    response = post('/query', {q: "SELECT%20name,%20id%20FROM%20Account%20WHERE%20Id%20=%20'#{id}'"})
+    response = get('/query', {q: "SELECT name, id FROM Account WHERE Id = '#{id}'"})
 
     if response[:records].length > 0
       response[:records][0][:Name]
@@ -42,7 +42,7 @@ class SalesforceApi
   end
 
   def create_aha_idea_link(params)
-    post('ahaapp__AhaIdeaLink__c', params)
+    post('/sobjects/ahaapp__AhaIdeaLink__c', params)
   end
 
   private
@@ -59,9 +59,10 @@ class SalesforceApi
     @queue.shift
 
     begin
-      response = @conn.get("/services/data/v58.0/sobjects#{route}") do |req|
+      response = @conn.get("/services/data/v58.0#{route}") do |req|
         req.params = url_params
-        req.headers['Authorization'] = "Bearer #{@access_token}"
+        req.headers['Authorization'] = "Bearer #{@access_token}" if !@access_token.nil?
+        req.headers['Content-Type'] = "application/json"
       end
     rescue Faraday::ClientError => e
       handle_error(e)
@@ -75,9 +76,10 @@ class SalesforceApi
     @queue.shift
 
     begin
-      response = @conn.post("/services/data/v58.0/sobjects#{route}") do |req|
-        req.body = body
+      response = @conn.post("/services/data/v58.0#{route}") do |req|
+        req.body = body.to_json
         req.headers['Authorization'] = "Bearer #{@access_token}" if !@access_token.nil?
+        req.headers['Content-Type'] = "application/json"
       end
     rescue Faraday::ClientError => e
       handle_error(e)
