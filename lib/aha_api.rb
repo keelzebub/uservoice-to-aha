@@ -14,6 +14,7 @@ class AhaApi
 
     @host = "https://#{options[:subdomain]}.aha.io"
     @conn = connection
+    @sf_integration_id = options[:sf_integration_id]
     @api_key = options[:api_key]
   end
 
@@ -63,6 +64,10 @@ class AhaApi
     post("/ideas/#{idea_id}/endorsements", {
       idea_endorsement: params
     })
+  end
+
+  def create_endorsement_integration_fields(idea_endorsement_id, params)
+    post("/idea_endorsements/#{idea_endorsement_id}/integrations/#{@sf_integration_id}/fields", {integration_fields: params})
   end
 
   private

@@ -3,90 +3,49 @@ require 'faraday'
 require 'awesome_print'
 require 'ruby-limiter'
 
-class UserVoiceApi
+class SalesforceApi
   def initialize(options = {})
     # create a rate-limited queue which allows 110 operations per minute
     @queue = Limiter::RateQueue.new(110, interval: 60, balanced: false) do
       p '-'*40
-      p "Hit the SalesForce limit, waiting"
+      p "Hit the Salesforce limit, waiting"
       p '-'*40
     end
 
     @host = "https://#{options[:subdomain]}.my.salesforce.com"
+    @access_token = options[:access_token]
     @conn = connection
-    @api_key = options[:api_key]
-    @api_secret = options[:api_secret]
-    @access_token = authenticate
   end
 
-  def fetch_users(cursor = nil)
-    params = {
-      includes: 'crm_accounts',
-      per_page: 100,
-      sort: 'created_at',
-      cursor: cursor,
-    }
-
-    get('/admin/users', params)
+  def create_idea(params)
+    post('/ahaapp__AhaIdea__c', params)
   end
 
-  def fetch_suggestions(cursor = nil)
-    params = {
-      includes: 'categories,labels,statuses',
-      per_page: 100,
-      sort: 'created_at',
-      cursor: cursor,
-      state: '-deleted,-merged,-spam,-closed'
-    }
+  def fetch_user_id(email)
+    response = post('/query', {q: "SELECT%20email,%20id%20FROM%20User%20WHERE%20email%20=%20'#{email}'"})
 
-    get('/admin/suggestions', params)
+    if response[:records].length > 0
+      response[:records][0][:Id]
+    else
+      nil
+    end
   end
 
-  def fetch_supporters(cursor = nil)
-    params = {
-      per_page: 100,
-      sort: 'created_at',
-      cursor: cursor,
-    }
+  def fetch_org_name(id)
+    response = post('/query', {q: "SELECT%20name,%20id%20FROM%20Account%20WHERE%20Id%20=%20'#{id}'"})
 
-    get('/admin/supporters', params)
+    if response[:records].length > 0
+      response[:records][0][:Name]
+    else
+      nil
+    end
   end
 
-  def fetch_comments(cursor = nil)
-    params = {
-      per_page: 100,
-      sort: 'updated_at',
-      cursor: cursor
-    }
-
-    get('/admin/comments', params)
-  end
-
-  def fetch_feedback_records(cursor = nil)
-    params = {
-      per_page: 100,
-      sort: 'created_at',
-      cursor: cursor,
-    }
-
-    get('/admin/feedback_records', params)
+  def create_aha_idea_link(params)
+    post('ahaapp__AhaIdeaLink__c', params)
   end
 
   private
-
-  def authenticate
-    # this operation will block until less than 110 shift calls have been made within the last minute
-    @queue.shift
-
-    body = {
-      grant_type: 'client_credentials',
-      client_id: @api_key,
-      client_secret: @api_secret,
-    }
-
-    response = post('/oauth/token', body)
-    response[:access_token]
-  end
 
   def connection
     Faraday.new(url: @host) do |faraday|
@@ -100,14 +59,10 @@ class UserVoiceApi
     @queue.shift
 
     begin
-      response = @conn.get("/api/v2#{route}") do |req|
+      response = @conn.get("/services/data/v58.0/sobjects#{route}") do |req|
         req.params = url_params
         req.headers['Authorization'] = "Bearer #{@access_token}"
       end
-    rescue Faraday::UnauthorizedError => e
-      @access_token = nil
-      authenticate
-      get(route, url_params)
     rescue Faraday::ClientError => e
       handle_error(e)
     else
@@ -120,14 +75,10 @@ class UserVoiceApi
     @queue.shift
 
     begin
-      response = @conn.post("/api/v2#{route}") do |req|
+      response = @conn.post("/services/data/v58.0/sobjects#{route}") do |req|
         req.body = body
         req.headers['Authorization'] = "Bearer #{@access_token}" if !@access_token.nil?
       end
-    rescue Faraday::UnauthorizedError => e
-      @access_token = nil
-      authenticate
-      post(route, body)
     rescue Faraday::ClientError => e
       handle_error(e)
     else

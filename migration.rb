@@ -1,13 +1,14 @@
 require 'awesome_print'
 require 'yaml'
 
-require './lib/aha_api.rb'
-require './lib/aha_utilities.rb'
 require './lib/uservoice_api.rb'
 require './lib/uservoice_utilities.rb'
+require './lib/aha_api.rb'
+require './lib/salesforce_api.rb'
+require './lib/migration_utilities.rb'
 
-include AhaUtilities
 include UserVoiceUtilities
+include MigrationUtilities
 
 config = YAML.load_file("./config.yml")
 
@@ -23,8 +24,16 @@ uv_api = UserVoiceApi.new(uv_options)
 aha_options = {
   api_key: config['aha_api_key'],
   subdomain: config['aha_subdomain'],
+  sf_integration_id: config['aha_sf_integration_id'],
 }
 aha_api = AhaApi.new(aha_options)
+
+# Initialize Salesforce
+sf_options = {
+  access_token: config['sf_access_token'],
+  subdomain: config['sf_subdomain'],
+}
+sf_api = SalesforceApi.new(aha_options)
 
 if !File.exists?('./tmp/org_fetch_status.tmp')
   p 'Fetching organizations from Aha'
@@ -54,21 +63,21 @@ p 'Fetching feedback records from UserVoice'
 p 'Feedback records fetched from UserVoice'
 
 p 'Starting creation of Aha users'
-AhaUtilities.create_aha_contacts(aha_api, config['aha_idea_portal_id'])
+MigrationUtilities.create_aha_contacts(aha_api, config['aha_idea_portal_id'])
 p 'Finished creating Aha users'
 
 p 'Starting creation of Aha ideas'
-AhaUtilities.create_aha_ideas(aha_api, config['aha_product_id'])
+MigrationUtilities.create_aha_sf_ideas(aha_api, sf_api, config['aha_product_id'])
 p 'Finished creating Aha ideas'
 
 p 'Starting creation of Aha idea comments'
-AhaUtilities.create_aha_comments(aha_api)
+MigrationUtilities.create_aha_comments(aha_api)
 p 'Finished creating Aha comments'
 
 p 'Starting creation of Aha endorsements (votes)'
-AhaUtilities.create_aha_endorsements(aha_api)
+MigrationUtilities.create_aha_endorsements(aha_api)
 p 'Finished creating Aha endorsements (votes)'
 
 p 'Starting creation of Aha proxy endorsements (proxy votes)'
-AhaUtilities.create_aha_proxy_endorsements(aha_api)
+MigrationUtilities.create_aha_sf_proxy_endorsements(aha_api, sf_api, config['default_sf_user_id'], config['sf_subdomain'])
 p 'Finished creating Aha proxy endorsements (proxy votes)'

@@ -6,7 +6,11 @@ aha_api_key:
 aha_subdomain:
 aha_idea_portal_id:
 aha_product_id:
+aha_sf_integration_id:
+
 suggestion_category_map:
   "UV Category Name": "Aha Category Name"
 suggestion_status_map:
   "UV Status": "Aha Status"
+
+default_sf_user_id:
