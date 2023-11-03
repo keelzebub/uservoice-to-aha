@@ -83,8 +83,15 @@ module MigrationUtilities
   #
   # Create Aha Ideas
   #
-  def create_aha_sf_ideas(aha_api, sf_api, product_id)
+  def create_aha_sf_ideas(aha_api, sf_api, product_id, options = {})
+    status_map = options[:status_map]
+    category_map = options[:category_map]
+    default_status = options[:default_status]
+    default_category = options[:default_status]
+    only_merged = options[:only_merged]
+
     user_map = create_user_map
+    idea_map = only_merged ? create_idea_map : {}
 
     # Check if we left off somewhere
     if !File.exists?('./tmp/created_ideas.csv')
@@ -100,19 +107,23 @@ module MigrationUtilities
     CSV.read('./tmp/all_suggestions.csv', headers: true).each_with_index do |row, index|
       next if created_ideas.include?(row['suggestion_id'])
 
-      # TODO: figure out status and category mapping
-      workflow_status = 'New'
-      categories = 'Classy'
+      workflow_status = status_map && status_map[row['status']] ? status_map[row['status']] : default_status
+      categories = category_map && category_map[row['category']] ? category_map[row['category']] : default_category
+
+      parent_idea_id = row['parent_suggestion'] ? idea_map[row['parent_suggestion']][:aha_idea_id] : nil
+
+      body = '<p>' + row['body'].gsub("\n", "</p><p>") + '</p>'
 
       # Create the idea in Aha
       aha_idea_params = {
         name: row['title'],
-        description: row['body'],
+        description: body,
         workflow_status: workflow_status,
         categories: categories,
         created_by: user_map[row['created_by']][:email],
         created_at: row['created_at'],
         visibility: 'public',
+        duplicate_idea: parent_idea_id,
       }
 
       aha_response = aha_api.create_idea(product_id, aha_idea_params)

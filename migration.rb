@@ -43,23 +43,27 @@ else
 end
 
 p 'Fetching users from UserVoice'
-# UserVoiceUtilities.create_uv_users_csv(uv_api)
+UserVoiceUtilities.create_uv_users_csv(uv_api)
 p 'Users fetched from UserVoice'
 
-p 'Fetching suggestions from UserVoice'
-# UserVoiceUtilities.create_uv_suggestions_csv(uv_api)
+p 'Fetching non-merged, non-deleted, and non-spam suggestions from UserVoice'
+UserVoiceUtilities.create_uv_suggestions_csv(uv_api)
 p 'Suggestions fetched from UserVoice'
 
+p 'Fetching merged suggestions from UserVoice'
+UserVoiceUtilities.create_uv_suggestions_csv(uv_api, true)
+p 'Merged suggestions fetched from UserVoice'
+
 p 'Fetching supporters from UserVoice'
-# UserVoiceUtilities.create_uv_supporters_csv(uv_api)
+UserVoiceUtilities.create_uv_supporters_csv(uv_api)
 p 'Supporters fetched from UserVoice'
 
 p 'Fetching comments from UserVoice'
-# UserVoiceUtilities.create_uv_comments_csv(uv_api)
+UserVoiceUtilities.create_uv_comments_csv(uv_api)
 p 'Comments fetched from UserVoice'
 
 p 'Fetching feedback records from UserVoice'
-# UserVoiceUtilities.create_uv_feedback_records_csv(uv_api)
+UserVoiceUtilities.create_uv_feedback_records_csv(uv_api)
 p 'Feedback records fetched from UserVoice'
 
 p 'Starting creation of Aha users'
@@ -67,7 +71,24 @@ MigrationUtilities.create_aha_contacts(aha_api, config['aha_idea_portal_id'])
 p 'Finished creating Aha users'
 
 p 'Starting creation of Aha ideas'
-MigrationUtilities.create_aha_sf_ideas(aha_api, sf_api, config['aha_product_id'])
+idea_creation_options = {
+  category_map: config['suggestion_category_map'],
+  status_map: config['suggestion_status_map'],
+  default_status: config['aha_default_status'],
+  default_category: config['aha_default_category'],
+}
+MigrationUtilities.create_aha_sf_ideas(aha_api, sf_api, config['aha_product_id'], idea_creation_options)
+p 'Finished creating Aha ideas'
+
+p 'Starting creation of Aha ideas that have been merged into other ideas'
+merged_idea_creation_options = {
+  category_map: config['suggestion_category_map'],
+  status_map: config['suggestion_status_map'],
+  default_status: config['aha_default_status'],
+  default_category: config['aha_default_category'],
+  only_merged: true,
+}
+MigrationUtilities.create_aha_sf_ideas(aha_api, sf_api, config['aha_product_id'], merged_idea_creation_options)
 p 'Finished creating Aha ideas'
 
 p 'Starting creation of Aha idea comments'

@@ -44,7 +44,7 @@ module UserVoiceUtilities
   #
   # Fetch all suggestions from UserVoice and write to CSV
   #
-  def create_uv_suggestions_csv(uv_api)
+  def create_uv_suggestions_csv(uv_api, only_merged = false)
     columns = [
       {
         name: 'suggestion_id',
@@ -79,6 +79,10 @@ module UserVoiceUtilities
         value: -> (item, _) { item[:portal_url] }
       },
       {
+        name: 'parent_suggestion',
+        value: -> (item, _) { item[:links][:parent_suggestion] }
+      },
+      {
         name: 'category',
         value: -> (item, included_items) { included_items[:categories][item[:links][:category]] }
       },
@@ -88,7 +92,11 @@ module UserVoiceUtilities
       },
       {
         name: 'status',
-        value: -> (item, included_items) { included_items[:statuses][item[:links][:status]] }
+        value: lambda do |item, included_items|
+          if item[:links][:last_internal_status_update]
+            included_items[:internal_status_updates][item[:links][:last_internal_status_update]]
+          end
+        end
       }
     ]
 
@@ -107,10 +115,20 @@ module UserVoiceUtilities
         name: :statuses,
         key: :id,
         value: :name
+      },
+      {
+        name: :internal_status_updates,
+        key: :id,
+        value: :name
       }
     ]
 
-    create_uv_csv(uv_api, :suggestions, columns, {included_items: included_items})
+    options = {
+      included_items: included_items,
+      file_name_override: only_merged && 'merged_suggestions'
+    }
+
+    create_uv_csv(uv_api, :suggestions, columns, options)
   end
 
   #
@@ -241,8 +259,9 @@ module UserVoiceUtilities
     cursor = nil
     last_page = 0
     total_pages = 'unknown'
-    cursor_file_path = "./tmp/#{object_name}_cursor.tmp"
-    csv_file_path = "./tmp/all_#{object_name}.csv"
+    file_name = options[:file_name_override] ? options[:file_name_override] : object_name
+    cursor_file_path = "./tmp/#{file_name}_cursor.tmp"
+    csv_file_path = "./tmp/all_#{file_name}.csv"
 
     csv = CSV.open(csv_file_path, 'a')
 
@@ -280,7 +299,7 @@ module UserVoiceUtilities
       end
 
       items.each do |item|
-        next if options[:skip_option] && options[:skip_option].call(item) # here <<<<<<
+        next if options[:skip_option] && options[:skip_option].call(item)
 
         row = columns.map { |col| col[:value].call(item, included_item_map) }
 

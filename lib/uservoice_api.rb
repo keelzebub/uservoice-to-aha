@@ -36,7 +36,19 @@ class UserVoiceApi
       per_page: 100,
       sort: 'created_at',
       cursor: cursor,
-      state: '-deleted,-merged,-spam,-closed'
+      state: '-deleted,-merged,-spam,closed',
+    }
+
+    get('/admin/suggestions', params)
+  end
+
+  def fetch_merged_suggestions(cursor = nil)
+    params = {
+      includes: 'categories,labels,statuses',
+      per_page: 100,
+      sort: 'created_at',
+      cursor: cursor,
+      state: 'merged,closed',
     }
 
     get('/admin/suggestions', params)
