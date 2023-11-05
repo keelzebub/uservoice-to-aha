@@ -87,11 +87,9 @@ module MigrationUtilities
     status_map = options[:status_map]
     category_map = options[:category_map]
     default_status = options[:default_status]
-    default_category = options[:default_status]
-    only_merged = options[:only_merged]
+    default_category = options[:default_category]
 
     user_map = create_user_map
-    idea_map = only_merged ? create_idea_map : {}
 
     # Check if we left off somewhere
     if !File.exists?('./tmp/created_ideas.csv')
@@ -110,8 +108,6 @@ module MigrationUtilities
       workflow_status = status_map && status_map[row['status']] ? status_map[row['status']] : default_status
       categories = category_map && category_map[row['category']] ? category_map[row['category']] : default_category
 
-      parent_idea_id = row['parent_suggestion'] ? idea_map[row['parent_suggestion']][:aha_idea_id] : nil
-
       body = '<p>' + row['body'].gsub("\n", "</p><p>") + '</p>'
 
       # Create the idea in Aha
@@ -123,7 +119,6 @@ module MigrationUtilities
         created_by: user_map[row['created_by']][:email],
         created_at: row['created_at'],
         visibility: 'public',
-        duplicate_idea: parent_idea_id,
       }
 
       aha_response = aha_api.create_idea(product_id, aha_idea_params)
@@ -178,6 +173,7 @@ module MigrationUtilities
         portal_user: {
           id: user_map[row['created_by']][:aha_portal_user_id],
         },
+        visibility: row['is_admin_comment'] ? 'employee_or_creator' : 'public',
         body: row['body'],
         created_at: row['created_at']
       }
@@ -298,6 +294,24 @@ module MigrationUtilities
     end
 
     created_proxy_endorsements_csv.close
+  end
+
+  def merge_aha_ideas(aha_api)
+    idea_map = create_idea_map
+
+    # Start parsing through suggestions starting at the top
+    CSV.read('./tmp/all_suggestions.csv', headers: true).each_with_index do |row, index|
+      next if !row['parent_suggestion']
+
+      aha_idea_id = idea_map[row['suggestion_id']][:aha_idea_id]
+
+      # Merge the idea in Aha
+      aha_idea_params = {
+        duplicate_idea: idea_map[row['parent_suggestion']][:aha_idea_id]
+      }
+
+      aha_response = aha_api.update_idea(aha_idea_id, aha_idea_params)
+    end
   end
 
   #!

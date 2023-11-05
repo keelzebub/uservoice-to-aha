@@ -44,7 +44,7 @@ module UserVoiceUtilities
   #
   # Fetch all suggestions from UserVoice and write to CSV
   #
-  def create_uv_suggestions_csv(uv_api, only_merged = false)
+  def create_uv_suggestions_csv(uv_api)
     columns = [
       {
         name: 'suggestion_id',
@@ -123,12 +123,7 @@ module UserVoiceUtilities
       }
     ]
 
-    options = {
-      included_items: included_items,
-      file_name_override: only_merged && 'merged_suggestions'
-    }
-
-    create_uv_csv(uv_api, :suggestions, columns, options)
+    create_uv_csv(uv_api, :suggestions, columns, {included_items: included_items})
   end
 
   #

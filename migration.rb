@@ -43,32 +43,22 @@ else
 end
 
 p 'Fetching users from UserVoice'
-UserVoiceUtilities.create_uv_users_csv(uv_api)
-p 'Users fetched from UserVoice'
+# user_count = UserVoiceUtilities.create_uv_users_csv(uv_api)
 
-p 'Fetching non-merged, non-deleted, and non-spam suggestions from UserVoice'
-UserVoiceUtilities.create_uv_suggestions_csv(uv_api)
-p 'Suggestions fetched from UserVoice'
+p 'Fetching non-deleted and non-spam suggestions from UserVoice'
+# suggestion_count = UserVoiceUtilities.create_uv_suggestions_csv(uv_api)
 
-p 'Fetching merged suggestions from UserVoice'
-UserVoiceUtilities.create_uv_suggestions_csv(uv_api, true)
-p 'Merged suggestions fetched from UserVoice'
-
-p 'Fetching supporters from UserVoice'
-UserVoiceUtilities.create_uv_supporters_csv(uv_api)
-p 'Supporters fetched from UserVoice'
+p 'Fetching supporters (votes) from UserVoice'
+# supporter_count = UserVoiceUtilities.create_uv_supporters_csv(uv_api)
 
 p 'Fetching comments from UserVoice'
-UserVoiceUtilities.create_uv_comments_csv(uv_api)
-p 'Comments fetched from UserVoice'
+# comment_count = UserVoiceUtilities.create_uv_comments_csv(uv_api)
 
-p 'Fetching feedback records from UserVoice'
-UserVoiceUtilities.create_uv_feedback_records_csv(uv_api)
-p 'Feedback records fetched from UserVoice'
+p 'Fetching feedback records (proxy votes) from UserVoice'
+# feedback_record_count = UserVoiceUtilities.create_uv_feedback_records_csv(uv_api)
 
 p 'Starting creation of Aha users'
 MigrationUtilities.create_aha_contacts(aha_api, config['aha_idea_portal_id'])
-p 'Finished creating Aha users'
 
 p 'Starting creation of Aha ideas'
 idea_creation_options = {
@@ -77,28 +67,19 @@ idea_creation_options = {
   default_status: config['aha_default_status'],
   default_category: config['aha_default_category'],
 }
-MigrationUtilities.create_aha_sf_ideas(aha_api, sf_api, config['aha_product_id'], idea_creation_options)
-p 'Finished creating Aha ideas'
 
-p 'Starting creation of Aha ideas that have been merged into other ideas'
-merged_idea_creation_options = {
-  category_map: config['suggestion_category_map'],
-  status_map: config['suggestion_status_map'],
-  default_status: config['aha_default_status'],
-  default_category: config['aha_default_category'],
-  only_merged: true,
-}
-MigrationUtilities.create_aha_sf_ideas(aha_api, sf_api, config['aha_product_id'], merged_idea_creation_options)
-p 'Finished creating Aha ideas'
+MigrationUtilities.create_aha_sf_ideas(aha_api, sf_api, config['aha_product_id'], idea_creation_options)
 
 p 'Starting creation of Aha idea comments'
 MigrationUtilities.create_aha_comments(aha_api)
-p 'Finished creating Aha comments'
 
 p 'Starting creation of Aha endorsements (votes)'
 MigrationUtilities.create_aha_endorsements(aha_api)
-p 'Finished creating Aha endorsements (votes)'
 
 p 'Starting creation of Aha proxy endorsements (proxy votes)'
 MigrationUtilities.create_aha_sf_proxy_endorsements(aha_api, sf_api, config['default_sf_user_id'], config['sf_subdomain'])
-p 'Finished creating Aha proxy endorsements (proxy votes)'
+
+p 'Merge relevant Aha ideas together'
+merge_aha_ideas(aha_api)
+
+p 'Migration complete!'

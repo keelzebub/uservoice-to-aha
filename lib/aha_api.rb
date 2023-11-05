@@ -54,6 +54,12 @@ class AhaApi
     })
   end
 
+  def update_idea(aha_id, params)
+    put("/ideas/#{aha_id}", {
+      idea: params
+    })
+  end
+
   def create_comment(idea_id, params)
     post("/ideas/#{idea_id}/idea_comments", {
       idea_comment: params
@@ -101,6 +107,32 @@ class AhaApi
 
     begin
       response = @conn.post("/api/v1#{route}") do |req|
+        req.body = body
+        req.headers['Authorization'] = "Bearer #{@api_key}"
+      end
+    rescue Faraday::BadRequestError => e
+      response_body = JSON.parse(e.response[:body], symbolize_names: true)
+      error_message = response_body[:errors].nil? ? response_body[:error] : response_body[:errors][:message]
+
+      if error_message == 'Email A contact already exists with this email' ||
+          error_message == 'Email A portal user already exists with this email'
+        return 'already created'
+      end
+
+      handle_error(e)
+    rescue Faraday::ClientError => e
+      handle_error(e)
+    else
+      JSON.parse(response.body, symbolize_names: true)
+    end
+  end
+
+  def put(route, body = nil)
+    # this operation will block until less than 290 shift calls have been made within the last minute
+    @queue.shift
+
+    begin
+      response = @conn.put("/api/v1#{route}") do |req|
         req.body = body
         req.headers['Authorization'] = "Bearer #{@api_key}"
       end
