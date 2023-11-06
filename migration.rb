@@ -58,7 +58,7 @@ p 'Fetching feedback records (proxy votes) from UserVoice'
 # feedback_record_count = UserVoiceUtilities.create_uv_feedback_records_csv(uv_api)
 
 p 'Starting creation of Aha users'
-MigrationUtilities.create_aha_contacts(aha_api, config['aha_idea_portal_id'])
+# MigrationUtilities.create_aha_contacts(aha_api, config['aha_idea_portal_id'])
 
 p 'Starting creation of Aha ideas'
 idea_creation_options = {
@@ -68,18 +68,18 @@ idea_creation_options = {
   default_category: config['aha_default_category'],
 }
 
-MigrationUtilities.create_aha_sf_ideas(aha_api, sf_api, config['aha_product_id'], idea_creation_options)
+# MigrationUtilities.create_aha_sf_ideas(aha_api, sf_api, config['aha_product_id'], idea_creation_options)
 
 p 'Starting creation of Aha idea comments'
-MigrationUtilities.create_aha_comments(aha_api)
+# MigrationUtilities.create_aha_comments(aha_api)
 
 p 'Starting creation of Aha endorsements (votes)'
-MigrationUtilities.create_aha_endorsements(aha_api)
+# MigrationUtilities.create_aha_endorsements(aha_api)
 
 p 'Starting creation of Aha proxy endorsements (proxy votes)'
-MigrationUtilities.create_aha_sf_proxy_endorsements(aha_api, sf_api, config['default_sf_user_id'], config['sf_subdomain'])
+# MigrationUtilities.create_aha_sf_proxy_endorsements(aha_api, sf_api, config['default_sf_user_id'], config['sf_subdomain'])
 
 p 'Merge relevant Aha ideas together'
-merge_aha_ideas(aha_api)
+# merge_aha_ideas(aha_api)
 
 p 'Migration complete!'

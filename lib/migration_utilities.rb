@@ -32,9 +32,12 @@ module MigrationUtilities
   #
   def create_aha_contacts(aha_api, idea_portal_id)
     org_map = create_org_map
+    total_users = File.read('./tmp/all_users.csv').each_line.count - 1
+
 
     # Check if we left off somewhere
     if !File.exists?('./tmp/created_users.csv')
+      p "Created 0 of #{total_users} users..."
       CSV.open('./tmp/created_users.csv', 'w') do |csv|
         csv << ['uv_user_id', 'email', 'aha_contact_id', 'aha_portal_user_id', 'sf_org_id']
       end
@@ -75,9 +78,13 @@ module MigrationUtilities
 
       created_users_email << row['email']
       created_users_csv << [row['id'], row['email'], contact_id, portal_user_id, row['sf_id']]
+
+      p "Created #{index + 1} of #{total_users} users..." if (index + 1) % 25 == 0
     end
 
     created_users_csv.close
+
+    p "Created #{total_users} users."
   end
 
   #
@@ -90,9 +97,12 @@ module MigrationUtilities
     default_category = options[:default_category]
 
     user_map = create_user_map
+    total_ideas = File.read('./tmp/all_suggestions.csv').each_line.count - 1
+
 
     # Check if we left off somewhere
     if !File.exists?('./tmp/created_ideas.csv')
+      p "Created 0 of #{total_ideas} ideas..."
       CSV.open('./tmp/created_ideas.csv', 'w') do |csv|
         csv << ['uv_suggestion_id', 'aha_idea_id', 'sf_idea_id']
       end
@@ -142,9 +152,13 @@ module MigrationUtilities
 
       created_ideas << row['suggestion_id']
       created_ideas_csv << [row['suggestion_id'], idea_id, sf_response[:id]]
+
+      p "Created #{index + 1} of #{total_ideas} ideas..." if (index + 1) % 25 == 0
     end
 
     created_ideas_csv.close
+
+    p "Created #{total_ideas} ideas."
   end
 
   #
@@ -153,9 +167,11 @@ module MigrationUtilities
   def create_aha_comments(aha_api)
     user_map = create_user_map
     idea_map = create_idea_map
+    total_comments = File.read('./tmp/all_comments.csv').each_line.count - 1
 
     # Check if we left off somewhere
     if !File.exists?('./tmp/created_comments.csv')
+      p "Created 0 of #{total_comments} comments..."
       CSV.open('./tmp/created_comments.csv', 'w') do |csv|
         csv << ['uv_comment_id', 'aha_comment_id']
       end
@@ -183,9 +199,12 @@ module MigrationUtilities
 
       created_comments << row['comment_id']
       created_comments_csv << [row['comment_id'], comment_id]
+
+      p "Created #{index + 1} of #{total_comments} comments..." if (index + 1) % 25 == 0
     end
 
     created_comments_csv.close
+    p "Created #{total_comments} comments."
   end
 
   #
@@ -194,9 +213,11 @@ module MigrationUtilities
   def create_aha_endorsements(aha_api)
     user_map = create_user_map
     idea_map = create_idea_map
+    total_endorsements = File.read('./tmp/all_supporters.csv').each_line.count - 1
 
     # Check if we left off somewhere
     if !File.exists?('./tmp/created_endorsements.csv')
+      p "Created 0 of #{total_endorsements} endorsements..."
       CSV.open('./tmp/created_endorsements.csv', 'w') do |csv|
         csv << ['uv_supporter_id', 'aha_endorsement_id']
       end
@@ -209,14 +230,9 @@ module MigrationUtilities
     CSV.read('./tmp/all_supporters.csv', headers: true).each_with_index do |row, index|
       next if created_endorsements.include?(row['supporter_id'])
 
-      # weight = 1
-      # weight = 2 if row['importance_score'] == 'Important'
-      # weight = 3 if row['importance_score'] == 'Critical'
-
       endorsement_params = {
         email: user_map[row['created_by']][:email],
         created_at: row['created_at']
-        # weight: weight,
       }
 
       response = aha_api.create_idea_endorsement(idea_map[row['suggestion_id']][:aha_idea_id], endorsement_params)
@@ -224,9 +240,11 @@ module MigrationUtilities
 
       created_endorsements << row['supporter_id']
       created_endorsements_csv << [row['supporter_id'], idea_endorsement_id]
+      p "Created #{index + 1} of #{total_endorsements} endorsements..." if (index + 1) % 25 == 0
     end
 
     created_endorsements_csv.close
+    p "Created #{total_endorsements} endorsements."
   end
 
   #
@@ -236,9 +254,11 @@ module MigrationUtilities
     user_map = create_user_map
     org_map = create_org_map
     idea_map = create_idea_map
+    total_endorsements = File.read('./tmp/all_feedback_records.csv').each_line.count - 1
 
     # Check if we left off somewhere
     if !File.exists?('./tmp/created_proxy_endorsements.csv')
+      p "Created 0 of #{total_endorsements} proxy endorsements..."
       CSV.open('./tmp/created_proxy_endorsements.csv', 'w') do |csv|
         csv << ['uv_feedback_record_id', 'aha_endorsement_id']
       end
@@ -291,9 +311,11 @@ module MigrationUtilities
 
       created_proxy_endorsements << row['feedback_record_id']
       created_proxy_endorsements_csv << [row['feedback_record_id'], idea_endorsement_id]
+      p "Created #{index + 1} of #{total_endorsements} proxy endorsements..." if (index + 1) % 25 == 0
     end
 
     created_proxy_endorsements_csv.close
+    p "Created #{total_endorsements} proxy endorsements."
   end
 
   def merge_aha_ideas(aha_api)
