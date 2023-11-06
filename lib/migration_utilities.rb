@@ -7,7 +7,7 @@ module MigrationUtilities
   #
   def create_aha_organizations_csv(aha_api)
     csv = CSV.open('./tmp/organizations.csv', 'w')
-    csv << ['sf_id', 'uv_org_id']
+    csv << ['sf_id', 'aha_org_id']
 
     current_page = 1
     total_pages = 1
@@ -366,7 +366,7 @@ module MigrationUtilities
     org_csv = CSV.read('./tmp/organizations.csv', headers: true)
     org_csv.each do |row|
       next if row['sf_id'] == ''
-      org_map[row['sf_id']] = row['uv_org_id']
+      org_map[row['sf_id']] = row['aha_org_id']
     end
     org_map
   end

@@ -37,13 +37,13 @@ sf_api = SalesforceApi.new(sf_options)
 
 if !File.exists?('./tmp/org_fetch_status.tmp')
   p 'Fetching organizations from Aha'
-  Utilities.create_aha_organizations_csv(aha_api)
+  MigrationUtilities.create_aha_organizations_csv(aha_api)
 else
   p 'Organizations already fetched from Aha'
 end
 
 p 'Fetching users from UserVoice'
-# user_count = UserVoiceUtilities.create_uv_users_csv(uv_api)
+user_count = UserVoiceUtilities.create_uv_users_csv(uv_api)
 
 p 'Fetching non-deleted and non-spam suggestions from UserVoice'
 # suggestion_count = UserVoiceUtilities.create_uv_suggestions_csv(uv_api)
