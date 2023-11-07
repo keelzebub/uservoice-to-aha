@@ -96,6 +96,7 @@ module MigrationUtilities
     category_map = options[:category_map]
     default_status = options[:default_status]
     default_category = options[:default_category]
+    default_creator = options[:default_creator]
 
     user_map = create_user_map
     total_ideas = File.read('./tmp/all_suggestions.csv').each_line.count - 1
@@ -127,7 +128,7 @@ module MigrationUtilities
         description: body,
         workflow_status: workflow_status,
         categories: categories,
-        created_by: user_map[row['created_by']][:email],
+        created_by: row['created_by'] ? user_map[row['created_by']][:email] : default_creator,
         created_at: row['created_at'],
         visibility: 'public',
       }
@@ -136,7 +137,7 @@ module MigrationUtilities
       idea_id = aha_response[:idea][:id]
 
       endorsement_params = {
-        email: user_map[row['created_by']][:email],
+        email: row['created_by'] ? user_map[row['created_by']][:email] : default_creator,
         created_at: row['created_at']
       }
 
@@ -144,7 +145,7 @@ module MigrationUtilities
 
       # Create the idea in SF
       sf_idea_params = {
-        Name: row['title'][0..80],
+        Name: row['title'][0..79],
         ahaapp__ReferenceNum__c: aha_response[:idea][:reference_num],
         ahaapp__Status__c: aha_response[:idea][:workflow_status][:name],
       }

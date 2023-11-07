@@ -66,6 +66,7 @@ idea_creation_options = {
   status_map: config['suggestion_status_map'],
   default_status: config['aha_default_status'],
   default_category: config['aha_default_category'],
+  default_creator: config['aha_default_creator'],
 }
 
 MigrationUtilities.create_aha_sf_ideas(aha_api, sf_api, config['aha_product_id'], idea_creation_options)
