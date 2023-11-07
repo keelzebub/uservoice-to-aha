@@ -94,7 +94,7 @@ class AhaApi
         req.params = url_params
         req.headers['Authorization'] = "Bearer #{@api_key}"
       end
-    rescue Faraday::ClientError => e
+    rescue => e
       handle_error(e)
     else
       JSON.parse(response.body, symbolize_names: true)
@@ -115,12 +115,13 @@ class AhaApi
       error_message = response_body[:errors].nil? ? response_body[:error] : response_body[:errors][:message]
 
       if error_message == 'Email A contact already exists with this email' ||
-          error_message == 'Email A portal user already exists with this email'
+          error_message == 'Email A portal user already exists with this email' ||
+          error_message == 'Email has already been taken'
         return 'already created'
       end
 
       handle_error(e)
-    rescue Faraday::ClientError => e
+    rescue => e
       handle_error(e)
     else
       JSON.parse(response.body, symbolize_names: true)
@@ -141,12 +142,13 @@ class AhaApi
       error_message = response_body[:errors].nil? ? response_body[:error] : response_body[:errors][:message]
 
       if error_message == 'Email A contact already exists with this email' ||
-          error_message == 'Email A portal user already exists with this email'
+          error_message == 'Email A portal user already exists with this email' ||
+          error_message == 'Email has already been taken'
         return 'already created'
       end
 
       handle_error(e)
-    rescue Faraday::ClientError => e
+    rescue => e
       handle_error(e)
     else
       JSON.parse(response.body, symbolize_names: true)
@@ -155,7 +157,7 @@ class AhaApi
 
   def handle_error(e)
     p '-'*40
-    p "Error: #{e.response[:status]}"
+    p "Error"
     ap e.response
     p '-'*40
     raise e

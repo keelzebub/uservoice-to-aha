@@ -273,7 +273,7 @@ module UserVoiceUtilities
 
     loop do
       p '-'*40
-      p "Fetching UserVoice #{object_name} (#{last_page + 1} of #{total_pages})..."
+      p "Fetching UserVoice #{object_name} (#{last_page + 1} of #{total_pages} pages)..."
       p cursor
 
       response = uv_api.send("fetch_#{object_name}", cursor)

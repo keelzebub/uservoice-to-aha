@@ -48,10 +48,11 @@ module MigrationUtilities
 
     # Start parsing through users starting at the top
     CSV.read('./tmp/all_users.csv', headers: true).each_with_index do |row, index|
-      next if created_users_email.include?(row['email'])
+      email = row['email'].downcase
+      next if created_users_email.include?(email)
 
       user_params = {
-        email: row['email'],
+        email: email,
         first_name: row['first_name'],
         last_name: row['last_name'],
         idea_organization_id: org_map[row['sf_id']] ? org_map[row['sf_id']].to_i : nil,
@@ -61,7 +62,7 @@ module MigrationUtilities
       users_response = aha_api.create_contact(user_params)
 
       if users_response == 'already created'
-        users_response = aha_api.get_contact(row['email'])
+        users_response = aha_api.get_contact(email)
         contact_id = users_response[:idea_users][0][:id]
       else
         contact_id = users_response[:idea_user][:id]
@@ -70,16 +71,16 @@ module MigrationUtilities
       portal_user_response = aha_api.create_portal_user(idea_portal_id, user_params)
 
       if portal_user_response == 'already created'
-        portal_user_response = aha_api.get_portal_user(idea_portal_id, row['email'])
+        portal_user_response = aha_api.get_portal_user(idea_portal_id, email)
         portal_user_id = portal_user_response[:portal_users][0][:id]
       else
         portal_user_id = portal_user_response[:portal_user][:id]
       end
 
-      created_users_email << row['email']
-      created_users_csv << [row['id'], row['email'], contact_id, portal_user_id, row['sf_id']]
+      created_users_email << email
+      created_users_csv << [row['id'], email, contact_id, portal_user_id, row['sf_id']]
 
-      p "Created #{index + 1} of #{total_users} users..." if (index + 1) % 25 == 0
+      p "Created #{index + 1} of #{total_users} users..." if (index + 1) % 20 == 0
     end
 
     created_users_csv.close
@@ -153,7 +154,7 @@ module MigrationUtilities
       created_ideas << row['suggestion_id']
       created_ideas_csv << [row['suggestion_id'], idea_id, sf_response[:id]]
 
-      p "Created #{index + 1} of #{total_ideas} ideas..." if (index + 1) % 25 == 0
+      p "Created #{index + 1} of #{total_ideas} ideas..." if (index + 1) % 20 == 0
     end
 
     created_ideas_csv.close
@@ -182,7 +183,7 @@ module MigrationUtilities
 
     # Start parsing through comments starting at the top
     CSV.read('./tmp/all_comments.csv', headers: true).each_with_index do |row, index|
-      next if created_comments.include?(row['comment_id'])
+      next if created_comments.include?(row['comment_id']) || !idea_map[row['suggestion_id']]
 
       comment_params = {
         idea_id: idea_map[row['suggestion_id']][:aha_idea_id],
@@ -200,7 +201,7 @@ module MigrationUtilities
       created_comments << row['comment_id']
       created_comments_csv << [row['comment_id'], comment_id]
 
-      p "Created #{index + 1} of #{total_comments} comments..." if (index + 1) % 25 == 0
+      p "Created #{index + 1} of #{total_comments} comments..." if (index + 1) % 20 == 0
     end
 
     created_comments_csv.close
@@ -228,7 +229,7 @@ module MigrationUtilities
 
     # Start parsing through supporters starting at the top
     CSV.read('./tmp/all_supporters.csv', headers: true).each_with_index do |row, index|
-      next if created_endorsements.include?(row['supporter_id'])
+      next if created_endorsements.include?(row['supporter_id']) || !idea_map[row['suggestion_id']]
 
       endorsement_params = {
         email: user_map[row['created_by']][:email],
@@ -240,7 +241,7 @@ module MigrationUtilities
 
       created_endorsements << row['supporter_id']
       created_endorsements_csv << [row['supporter_id'], idea_endorsement_id]
-      p "Created #{index + 1} of #{total_endorsements} endorsements..." if (index + 1) % 25 == 0
+      p "Created #{index + 1} of #{total_endorsements} endorsements..." if (index + 1) % 20 == 0
     end
 
     created_endorsements_csv.close
@@ -271,6 +272,7 @@ module MigrationUtilities
     CSV.read('./tmp/all_feedback_records.csv', headers: true).each_with_index do |row, index|
       next if created_proxy_endorsements.include?(row['feedback_record_id'])
       next if !org_map[row['sf_id']]
+      next if !idea_map[row['suggestion_id']]
 
       # Create the endorsement in Aha
       endorsement_params = {
@@ -311,7 +313,7 @@ module MigrationUtilities
 
       created_proxy_endorsements << row['feedback_record_id']
       created_proxy_endorsements_csv << [row['feedback_record_id'], idea_endorsement_id]
-      p "Created #{index + 1} of #{total_endorsements} proxy endorsements..." if (index + 1) % 25 == 0
+      p "Created #{index + 1} of #{total_endorsements} proxy endorsements..." if (index + 1) % 20 == 0
     end
 
     created_proxy_endorsements_csv.close
@@ -323,7 +325,7 @@ module MigrationUtilities
 
     # Start parsing through suggestions starting at the top
     CSV.read('./tmp/all_suggestions.csv', headers: true).each_with_index do |row, index|
-      next if !row['parent_suggestion']
+      next if !row['parent_suggestion'] || !idea_map[row['suggestion_id']]
 
       aha_idea_id = idea_map[row['suggestion_id']][:aha_idea_id]
 

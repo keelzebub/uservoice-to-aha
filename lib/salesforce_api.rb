@@ -64,7 +64,7 @@ class SalesforceApi
         req.headers['Authorization'] = "Bearer #{@access_token}" if !@access_token.nil?
         req.headers['Content-Type'] = "application/json"
       end
-    rescue Faraday::ClientError => e
+    rescue => e
       handle_error(e)
     else
       JSON.parse(response.body, symbolize_names: true)
@@ -81,7 +81,7 @@ class SalesforceApi
         req.headers['Authorization'] = "Bearer #{@access_token}" if !@access_token.nil?
         req.headers['Content-Type'] = "application/json"
       end
-    rescue Faraday::ClientError => e
+    rescue => e
       handle_error(e)
     else
       JSON.parse(response.body, symbolize_names: true)

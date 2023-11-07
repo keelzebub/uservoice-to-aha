@@ -32,23 +32,11 @@ class UserVoiceApi
 
   def fetch_suggestions(cursor = nil)
     params = {
-      includes: 'categories,labels,statuses',
+      includes: 'categories,labels,statuses,internal_status_updates',
       per_page: 100,
       sort: 'created_at',
       cursor: cursor,
-      state: '-deleted,-merged,-spam,closed',
-    }
-
-    get('/admin/suggestions', params)
-  end
-
-  def fetch_merged_suggestions(cursor = nil)
-    params = {
-      includes: 'categories,labels,statuses',
-      per_page: 100,
-      sort: 'created_at',
-      cursor: cursor,
-      state: 'merged,closed',
+      state: '-deleted,-spam,closed',
     }
 
     get('/admin/suggestions', params)
@@ -120,7 +108,7 @@ class UserVoiceApi
       @access_token = nil
       authenticate
       get(route, url_params)
-    rescue Faraday::ClientError => e
+    rescue => e
       handle_error(e)
     else
       JSON.parse(response.body, symbolize_names: true)
@@ -140,7 +128,7 @@ class UserVoiceApi
       @access_token = nil
       authenticate
       post(route, body)
-    rescue Faraday::ClientError => e
+    rescue => e
       handle_error(e)
     else
       JSON.parse(response.body, symbolize_names: true)
