@@ -60,7 +60,7 @@ else
 end
 
 p 'Fetching users from UserVoice'
-UserVoiceUtilities.create_uv_users_csv(uv_api)
+UserVoiceUtilities.create_uv_users_csv(uv_api, config['email_subdomain'])
 
 p 'Fetching non-deleted and non-spam suggestions from UserVoice'
 UserVoiceUtilities.create_uv_suggestions_csv(uv_api)

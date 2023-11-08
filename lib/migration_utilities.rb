@@ -248,7 +248,7 @@ module MigrationUtilities
 
       response = aha_api.create_idea_endorsement(idea_map[row['suggestion_id']][:aha_idea_id], endorsement_params)
 
-      idea_endorsement_id = response = 'already_created' ? nil : response[:idea_endorsement][:id]
+      idea_endorsement_id = response == 'already_created' ? nil : response[:idea_endorsement][:id]
 
       created_endorsements << row['supporter_id']
       created_endorsements_csv << [row['supporter_id'], idea_endorsement_id]

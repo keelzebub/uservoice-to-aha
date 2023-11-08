@@ -4,7 +4,7 @@ module UserVoiceUtilities
   #
   # Fetch all users with activity from UserVoice and write to CSV
   #
-  def create_uv_users_csv(uv_api)
+  def create_uv_users_csv(uv_api, email_subdomain)
     columns = [
       {
         name: 'id',
@@ -36,7 +36,10 @@ module UserVoiceUtilities
       }
     ]
 
-    skip_user = -> (item) { item[:supported_suggestions_count] == 0 }
+    skip_user = lambda do |item|
+      item[:supported_suggestions_count] == 0 &&
+      (!email_subdomain || !item[:email_address].match(email_subdomain))
+    end
 
     create_uv_csv(uv_api, :users, columns, {skip_option: skip_user, included_items: included_items})
   end
