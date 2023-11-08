@@ -137,7 +137,7 @@ class UserVoiceApi
 
   def handle_error(e)
     p '-'*40
-    p "Error: #{e.response[:status]}"
+    p "Error"
     ap e.response
     p '-'*40
     raise 'error'

@@ -116,9 +116,17 @@ class AhaApi
 
       if error_message == 'Email A contact already exists with this email' ||
           error_message == 'Email A portal user already exists with this email' ||
-          error_message == 'Email has already been taken'
+          error_message == 'Email has already been taken' ||
+          error_message == 'User has already voted for idea'
         return 'already created'
       end
+
+      handle_error(e)
+    rescue Faraday::ConflictError => e
+      response_body = JSON.parse(e.response[:body], symbolize_names: true)
+      error_message = response_body[:errors].nil? ? response_body[:error] : response_body[:errors][:message]
+
+      return 'already created' if error_message == 'User has already voted for idea'
 
       handle_error(e)
     rescue => e

@@ -96,7 +96,8 @@ module MigrationUtilities
     category_map = options[:category_map]
     default_status = options[:default_status]
     default_category = options[:default_category]
-    default_creator = options[:default_creator]
+    fallback_user = options[:fallback_user]
+
 
     user_map = create_user_map
     total_ideas = File.read('./tmp/all_suggestions.csv').each_line.count - 1
@@ -119,8 +120,10 @@ module MigrationUtilities
 
       workflow_status = status_map && status_map[row['status']] ? status_map[row['status']] : default_status
       categories = category_map && category_map[row['category']] ? category_map[row['category']] : default_category
+      created_by_email = user_map[row['created_by']] ? user_map[row['created_by']][:email] : fallback_user[:email]
+      body = row['body'] ? row['body'].gsub("\n", "</p><p>") : ''
 
-      body = '<p>' + row['body'].gsub("\n", "</p><p>") + '</p>'
+      body = '<p>' + body + '</p>'
 
       # Create the idea in Aha
       aha_idea_params = {
@@ -128,7 +131,7 @@ module MigrationUtilities
         description: body,
         workflow_status: workflow_status,
         categories: categories,
-        created_by: row['created_by'] ? user_map[row['created_by']][:email] : default_creator,
+        created_by: created_by_email,
         created_at: row['created_at'],
         visibility: 'public',
       }
@@ -137,17 +140,19 @@ module MigrationUtilities
       idea_id = aha_response[:idea][:id]
 
       endorsement_params = {
-        email: row['created_by'] ? user_map[row['created_by']][:email] : default_creator,
+        email: created_by_email,
         created_at: row['created_at']
       }
 
       aha_api.create_idea_endorsement(idea_id, endorsement_params)
+      sf_user_id = sf_api.fetch_user_id(created_by_email)
 
       # Create the idea in SF
       sf_idea_params = {
         Name: row['title'][0..79],
         ahaapp__ReferenceNum__c: aha_response[:idea][:reference_num],
         ahaapp__Status__c: aha_response[:idea][:workflow_status][:name],
+        CreatedById: sf_user_id || fallback_user[:sf_user_id],
       }
 
       sf_response = sf_api.create_idea(sf_idea_params)
@@ -166,7 +171,7 @@ module MigrationUtilities
   #
   # Create comments on Aha Ideas
   #
-  def create_aha_comments(aha_api)
+  def create_aha_comments(aha_api, fallback_user)
     user_map = create_user_map
     idea_map = create_idea_map
     total_comments = File.read('./tmp/all_comments.csv').each_line.count - 1
@@ -186,12 +191,14 @@ module MigrationUtilities
     CSV.read('./tmp/all_comments.csv', headers: true).each_with_index do |row, index|
       next if created_comments.include?(row['comment_id']) || !idea_map[row['suggestion_id']]
 
+      created_by = user_map[row['created_by']] ? user_map[row['created_by']][:aha_portal_user_id] : fallback_user[:portal_user_id]
+
       comment_params = {
         idea_id: idea_map[row['suggestion_id']][:aha_idea_id],
         portal_user: {
-          id: user_map[row['created_by']][:aha_portal_user_id],
+          id: created_by,
         },
-        visibility: row['is_admin_comment'] ? 'employee_or_creator' : 'public',
+        visibility: row['is_admin_comment'] == 'true' ? 'employee_or_creator' : 'public',
         body: row['body'],
         created_at: row['created_at']
       }
@@ -212,7 +219,7 @@ module MigrationUtilities
   #
   # Create supporters/endorsements (votes) on Aha Ideas
   #
-  def create_aha_endorsements(aha_api)
+  def create_aha_endorsements(aha_api, fallback_user)
     user_map = create_user_map
     idea_map = create_idea_map
     total_endorsements = File.read('./tmp/all_supporters.csv').each_line.count - 1
@@ -232,13 +239,16 @@ module MigrationUtilities
     CSV.read('./tmp/all_supporters.csv', headers: true).each_with_index do |row, index|
       next if created_endorsements.include?(row['supporter_id']) || !idea_map[row['suggestion_id']]
 
+      created_by = user_map[row['created_by']] ? user_map[row['created_by']][:email] : fallback_user[:email]
+
       endorsement_params = {
-        email: user_map[row['created_by']][:email],
+        email: created_by,
         created_at: row['created_at']
       }
 
       response = aha_api.create_idea_endorsement(idea_map[row['suggestion_id']][:aha_idea_id], endorsement_params)
-      idea_endorsement_id = response[:idea_endorsement][:id]
+
+      idea_endorsement_id = response = 'already_created' ? nil : response[:idea_endorsement][:id]
 
       created_endorsements << row['supporter_id']
       created_endorsements_csv << [row['supporter_id'], idea_endorsement_id]
@@ -252,7 +262,7 @@ module MigrationUtilities
   #
   # Create feedback records/endorsements (proxy votes) on Aha Ideas
   #
-  def create_aha_sf_proxy_endorsements(aha_api, sf_api, default_sf_user_id, sf_subdomain)
+  def create_aha_sf_proxy_endorsements(aha_api, sf_api, fallback_user, sf_subdomain)
     user_map = create_user_map
     org_map = create_org_map
     idea_map = create_idea_map
@@ -275,9 +285,11 @@ module MigrationUtilities
       next if !org_map[row['sf_id']]
       next if !idea_map[row['suggestion_id']]
 
+      created_by = user_map[row['created_by']] ? user_map[row['created_by']][:email] : fallback_user[:email]
+
       # Create the endorsement in Aha
       endorsement_params = {
-        email: user_map[row['created_by']][:email],
+        email: created_by,
         idea_organization_id: org_map[row['sf_id']].to_i,
         link: row['sf_url'],
         description: row['body'],
@@ -292,7 +304,7 @@ module MigrationUtilities
 
       # Create the Ideas/SF Account link
       sf_link_params = {
-        ahaapp__LinkedBy__c: sf_user_id || default_sf_user_id,
+        ahaapp__LinkedBy__c: sf_user_id || fallback_user[:sf_user_id],
         ahaapp__AhaIdea__c: idea_map[row['suggestion_id']][:sf_idea_id],
         ahaapp__Account__c: row['sf_id']
       }

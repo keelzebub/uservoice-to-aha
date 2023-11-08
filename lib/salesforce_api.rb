@@ -22,6 +22,7 @@ class SalesforceApi
   end
 
   def fetch_user_id(email)
+    email = email.gsub(/'/, "\\\\'")
     response = get('/query', {q: "SELECT email, id FROM User WHERE email = '#{email}'"})
 
     if response[:records].length > 0

@@ -35,6 +35,23 @@ sf_options = {
 }
 sf_api = SalesforceApi.new(sf_options)
 
+fallback_user = {
+  email: config['fallback_user'],
+}
+
+fallback_user[:sf_user_id] = sf_api.fetch_user_id(config['fallback_user'])
+
+if !(fallback_user[:sf_user_id])
+  raise "Fallback user #{config['fallback_user']} does not exist in Salesforce."
+end
+
+portal_user_response = aha_api.get_portal_user(config['aha_idea_portal_id'], config['fallback_user'])
+if portal_user_response[:portal_users].length == 0
+  raise "Fallback user #{config['fallback_user']} does not exist in Aha Idea Portal."
+end
+
+fallback_user[:portal_user_id] = portal_user_response[:portal_users][0][:id]
+
 if !File.exists?('./tmp/org_fetch_status.tmp')
   p 'Fetching organizations from Aha'
   MigrationUtilities.create_aha_organizations_csv(aha_api)
@@ -66,19 +83,20 @@ idea_creation_options = {
   status_map: config['suggestion_status_map'],
   default_status: config['aha_default_status'],
   default_category: config['aha_default_category'],
+  fallback_user: fallback_user,
   default_creator: config['aha_default_creator'],
 }
 
 MigrationUtilities.create_aha_sf_ideas(aha_api, sf_api, config['aha_product_id'], idea_creation_options)
 
 p 'Starting creation of Aha idea comments'
-MigrationUtilities.create_aha_comments(aha_api)
+MigrationUtilities.create_aha_comments(aha_api, fallback_user)
 
 p 'Starting creation of Aha endorsements (votes)'
-MigrationUtilities.create_aha_endorsements(aha_api)
+MigrationUtilities.create_aha_endorsements(aha_api, fallback_user)
 
 p 'Starting creation of Aha proxy endorsements (proxy votes)'
-MigrationUtilities.create_aha_sf_proxy_endorsements(aha_api, sf_api, config['default_sf_user_id'], config['sf_subdomain'])
+MigrationUtilities.create_aha_sf_proxy_endorsements(aha_api, sf_api, fallback_user, config['sf_subdomain'])
 
 p 'Merge relevant Aha ideas together'
 merge_aha_ideas(aha_api)
