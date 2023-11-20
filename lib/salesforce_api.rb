@@ -56,10 +56,6 @@ class SalesforceApi
     post('/sobjects/ahaapp__AhaIdeaLink__c', params)
   end
 
-  def delete_sf_idea(sf_idea_id)
-    delete("/sobjects/ahaapp__AhaIdea__c/#{sf_idea_id}")
-  end
-
   private
 
   def connection
