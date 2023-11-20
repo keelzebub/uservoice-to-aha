@@ -1,7 +1,8 @@
 # UserVoice to Aha Migration w/ Salesforce
 When trying to migrate my company's data from UserVoice to Aha, I ran into a couple issues; specifically, Aha's automatic migration doesn't preserve the existing Salesforce links, and UserVoice's Salesforce integration adds every single Salesforce contact to UserVoice (even if they haven't interacted with UserVoice).
 
-This script selectively migrates contacts from UserVoice to Aha, as well as preserves the feature requests' links to Salesforce. It was written based on this Aha article: https://www.aha.io/support/roadmaps/integrations/salesforce/bulk-link-aha-roadmaps-salesforce-records.
+This script selectively migrates contacts from UserVoice to Aha, as well as preserves the feature requests' links to Salesforce. It was written based on the Aha article [Aha! Roadmaps | Link Aha! Roadmaps and Salesforce records in bulk (Advanced plan)
+](https://www.aha.io/support/roadmaps/integrations/salesforce/bulk-link-aha-roadmaps-salesforce-records).
 
 _Note: UserVoice calls feature requests "suggestions" and Aha calls feature requests "Ideas"—I will just be using the term "feature requests" in the README to avoid confusion._
 
