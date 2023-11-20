@@ -15,9 +15,9 @@ Running this script will do a few key things:
 - Migrate all proxy votes (known as "feedback requests" on UserVoice), preserving their links to Salesforce.
 - Merge any feature requests in Aha that were previously merged in UserVoice.
 
-# Getting Started
+## Getting Started
 
-## Prerequisites
+# Prerequisites
 In order to run this script successfully, you'll need to do a couple things:
 
 - Add the Salesforce integration to Aha and allow time for SF Accounts to migrate over to Aha.
@@ -29,22 +29,24 @@ In order to run this script successfully, you'll need to do a couple things:
 - Copy `config-example.yml` to `config.yml` and fill out the configuration details (see section below).
 
 
-## Configuration
+# Configuration
 Copy `config-example.yml` to `config.yml` and fill out the following configuration items in `config.yml`:
 
-- `fallback_user`: email of the fallback user configured in your SF and Aha Idea Portal instances
-- `email_subdomain`: your company's email subdomain
-- `uv_api_key`: API key for UserVoice
-- `uv_api_secret`: API secret for UserVoice
-- `uv_subdomain`:  your UserVoice subdomain (e.g. `mycompany` if your UserVoice domain is `mycompany.uservoice.com`)
-- `aha_api_key`: API key for Aha
-- `aha_subdomain`: your Aha subdomain (e.g. `mycompany` if your UserVoice domain is `mycompany.aha.io`)
-- `aha_idea_portal_id`: the ID of the Aha Idea Portal with which you'd like your feature requests to be assoociated
-- `aha_product_id`: the product id of the Aha workspace into which you'd like your feature requests to be added. Also known as the "prefix" under Account Settings -> Customizations -> Workspaces -> Edit Workspace.
-- `aha_sf_integration_id`: the id of the Salesforce integration in Aha. You can grab this by navigating to the Salesforce integration in Aha and pulling it from the URL (e.g. `12345` if the URL is `https://mycompany.aha.io/settings/integrations/12345/enabled`)
-- `aha_default_status`: The default status that feature requests will have when they are migrated to Aha. Can be overridden by the `status_map` configuration.
-- `aha_default_category`: The default category that feature requests will have when they are migrated to Aha. Can be overridden by the `category_map` configuration.
-- `status_map`: a key-value map where the key is the feature request's UserVoice status and the value is the Aha status you want the feature request to have after migrating.
-- `category_map`: a key-value map where the key is the feature request's UserVoice category and the value is the Aha category you want the feature request to have after migrating.
-- `sf_subdomain`: your Salesforce subdomain (e.g. `mycompany` if your Salesforce domain is `https://mycompany.lightning.force.com/`)
-- `sf_access_token`: a Salesforce access token. You can generate a Salesforce access token by installing the Salesforce CLI and following the instructions here: https://developer.salesforce.com/docs/atlas.en-us.api_rest.meta/api_rest/quickstart_oauth.htm?q=auth
+| Key | Description |
+| --- | --- |
+| `fallback_user` | email of the fallback user configured in your SF and Aha Idea Portal instances |
+| `email_subdomain` | your company's email subdomain |
+| `uv_api_key` | API key for UserVoice |
+| `uv_api_secret` | API secret for UserVoice |
+| `uv_subdomain` |  your UserVoice subdomain (e.g. `mycompany` if your UserVoice domain is `mycompany.uservoice.com`) |
+| `aha_api_key` | API key for Aha |
+| `aha_subdomain` | your Aha subdomain (e.g. `mycompany` if your UserVoice domain is `mycompany.aha.io`) |
+| `aha_idea_portal_id` | the ID of the Aha Idea Portal with which you'd like your feature requests to be assoociated |
+| `aha_product_id` | the product id of the Aha workspace into which you'd like your feature requests to be added. Also known as the "prefix" under Account Settings -> Customizations -> Workspaces -> Edit Workspace. |
+| `aha_sf_integration_id` | the id of the Salesforce integration in Aha. You can grab this by navigating to the Salesforce integration in Aha and pulling it from the URL (e.g. `12345` if the URL is `https://mycompany.aha.io/settings/integrations/12345/enabled`) |
+| `aha_default_status` | The default status that feature requests will have when they are migrated to Aha. Can be overridden by the `status_map` configuration. |
+| `aha_default_category` | The default category that feature requests will have when they are migrated to Aha. Can be overridden by the `category_map` configuration. |
+| `status_map` | a key-value map where the key is the feature request's UserVoice status and the value is the Aha status you want the feature request to have after migrating. |
+| `category_map` | a key-value map where the key is the feature request's UserVoice category and the value is the Aha category you want the feature request to have after migrating. |
+| `sf_subdomain` | your Salesforce subdomain (e.g. `mycompany` if your Salesforce domain is `https://mycompany.lightning.force.com/`) |
+| `sf_access_token` | a Salesforce access token. You can generate a Salesforce access token by installing the Salesforce CLI and following the instructions here: https://developer.salesforce.com/docs/atlas.en-us.api_rest.meta/api_rest/quickstart_oauth.htm?q=auth |
