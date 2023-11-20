@@ -72,6 +72,12 @@ class AhaApi
     })
   end
 
+  def create_idea_subscription(idea_id, params)
+    post("/ideas/#{idea_id}/subscriptions", {
+      idea_subscription: params
+    })
+  end
+
   def create_endorsement_integration_fields(idea_endorsement_id, params)
     post("/idea_endorsements/#{idea_endorsement_id}/integrations/#{@sf_integration_id}/fields", {integration_fields: params})
   end

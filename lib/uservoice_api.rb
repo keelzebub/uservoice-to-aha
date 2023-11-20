@@ -36,7 +36,7 @@ class UserVoiceApi
       per_page: 100,
       sort: 'created_at',
       cursor: cursor,
-      state: '-deleted,-spam,closed',
+      state: '-deleted,-spam',
     }
 
     get('/admin/suggestions', params)

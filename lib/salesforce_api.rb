@@ -32,6 +32,16 @@ class SalesforceApi
     end
   end
 
+  def fetch_aha_link(sf_idea_id, account_id)
+    response = get('/query', {q: "SELECT name FROM ahaapp__AhaIdeaLink__c WHERE ahaapp__AhaIdea__c = '#{sf_idea_id}' AND ahaapp__Account__c = '#{account_id}'"})
+
+    if response[:records].length > 0
+      response[:records][0][:Name]
+    else
+      nil
+    end
+  end
+
   def fetch_org_name(id)
     response = get('/query', {q: "SELECT name, id FROM Account WHERE Id = '#{id}'"})
 
@@ -44,6 +54,10 @@ class SalesforceApi
 
   def create_aha_idea_link(params)
     post('/sobjects/ahaapp__AhaIdeaLink__c', params)
+  end
+
+  def delete_sf_idea(sf_idea_id)
+    delete("/sobjects/ahaapp__AhaIdea__c/#{sf_idea_id}")
   end
 
   private
@@ -72,6 +86,22 @@ class SalesforceApi
     end
   end
 
+  def delete(route, url_params = nil)
+    # this operation will block until less than 110 shift calls have been made within the last minute
+    @queue.shift
+
+    begin
+      response = @conn.delete("/services/data/v58.0#{route}") do |req|
+        req.headers['Authorization'] = "Bearer #{@access_token}" if !@access_token.nil?
+        req.headers['Content-Type'] = "application/json"
+      end
+    rescue => e
+      handle_error(e)
+    else
+      return true
+    end
+  end
+
   def post(route, body = nil)
     # this operation will block until less than 110 shift calls have been made within the last minute
     @queue.shift
@@ -91,7 +121,7 @@ class SalesforceApi
 
   def handle_error(e)
     p '-'*40
-    p "Error: #{e.response[:status]}"
+    p "Error"
     ap e.response
     p '-'*40
     raise 'error'

@@ -98,10 +98,8 @@ module MigrationUtilities
     default_category = options[:default_category]
     fallback_user = options[:fallback_user]
 
-
     user_map = create_user_map
     total_ideas = File.read('./tmp/all_suggestions.csv').each_line.count - 1
-
 
     # Check if we left off somewhere
     if !File.exists?('./tmp/created_ideas.csv')
@@ -219,7 +217,7 @@ module MigrationUtilities
   #
   # Create supporters/endorsements (votes) on Aha Ideas
   #
-  def create_aha_endorsements(aha_api, fallback_user)
+  def create_aha_endorsements(aha_api, fallback_user, idea_portal_id)
     user_map = create_user_map
     idea_map = create_idea_map
     total_endorsements = File.read('./tmp/all_supporters.csv').each_line.count - 1
@@ -248,7 +246,15 @@ module MigrationUtilities
 
       response = aha_api.create_idea_endorsement(idea_map[row['suggestion_id']][:aha_idea_id], endorsement_params)
 
-      idea_endorsement_id = response == 'already_created' ? nil : response[:idea_endorsement][:id]
+      idea_endorsement_id = response == 'already created' ? nil : response[:idea_endorsement][:id]
+
+      if idea_endorsement_id && row['is_subscribed'] == 'true' && created_by != fallback_user[:email]
+        subscription_params = {
+          email: created_by,
+          idea_portal_id: idea_portal_id
+        }
+        aha_api.create_idea_subscription(idea_map[row['suggestion_id']][:aha_idea_id], endorsement_params)
+      end
 
       created_endorsements << row['supporter_id']
       created_endorsements_csv << [row['supporter_id'], idea_endorsement_id]
@@ -300,29 +306,34 @@ module MigrationUtilities
       response = aha_api.create_idea_endorsement(idea_map[row['suggestion_id']][:aha_idea_id], endorsement_params)
       idea_endorsement_id = response[:idea_endorsement][:id]
 
-      sf_user_id = sf_api.fetch_user_id(user_map[row['user_id']][:email])
+      if idea_endorsement_id
+        sf_user_id = sf_api.fetch_user_id(user_map[row['user_id']][:email])
 
-      # Create the Ideas/SF Account link
-      sf_link_params = {
-        ahaapp__LinkedBy__c: sf_user_id || fallback_user[:sf_user_id],
-        ahaapp__AhaIdea__c: idea_map[row['suggestion_id']][:sf_idea_id],
-        ahaapp__Account__c: row['sf_id']
-      }
+        # Check that SF doesn't already contain a link between the Idea and an Account
+        if !sf_api.fetch_aha_link(idea_map[row['suggestion_id']][:sf_idea_id], row['sf_id'])
+          # Create the Ideas/SF Account link
+          sf_link_params = {
+            ahaapp__LinkedBy__c: sf_user_id || fallback_user[:sf_user_id],
+            ahaapp__AhaIdea__c: idea_map[row['suggestion_id']][:sf_idea_id],
+            ahaapp__Account__c: row['sf_id']
+          }
 
-      sf_api.create_aha_idea_link(sf_link_params)
+          sf_api.create_aha_idea_link(sf_link_params)
+        end
 
-      sf_account_name = sf_api.fetch_org_name(row['sf_id'])
+        sf_account_name = sf_api.fetch_org_name(row['sf_id'])
 
-      # Link the Aha endorsement to a Salesforce record
-      aha_integration_params = [
-        {name: 'account_id', value: row['sf_id']},
-        {name: 'related_id', value: row['sf_id']},
-        {name: 'related_type', value: 'Account'},
-        {name: 'account_name', value: sf_account_name},
-        {name: 'base_url', value: "https://#{sf_subdomain}.my.salesforce.com"},
-      ]
+        # Link the Aha endorsement to a Salesforce record
+        aha_integration_params = [
+          {name: 'account_id', value: row['sf_id']},
+          {name: 'related_id', value: row['sf_id']},
+          {name: 'related_type', value: 'Account'},
+          {name: 'account_name', value: sf_account_name},
+          {name: 'base_url', value: "https://#{sf_subdomain}.my.salesforce.com"},
+        ]
 
-      aha_api.create_endorsement_integration_fields(idea_endorsement_id, aha_integration_params)
+        aha_api.create_endorsement_integration_fields(idea_endorsement_id, aha_integration_params)
+      end
 
       created_proxy_endorsements << row['feedback_record_id']
       created_proxy_endorsements_csv << [row['feedback_record_id'], idea_endorsement_id]

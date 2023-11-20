@@ -79,8 +79,8 @@ MigrationUtilities.create_aha_contacts(aha_api, config['aha_idea_portal_id'])
 
 p 'Starting creation of Aha ideas'
 idea_creation_options = {
-  category_map: config['suggestion_category_map'],
-  status_map: config['suggestion_status_map'],
+  category_map: config['category_map'],
+  status_map: config['status_map'],
   default_status: config['aha_default_status'],
   default_category: config['aha_default_category'],
   fallback_user: fallback_user,
@@ -93,12 +93,12 @@ p 'Starting creation of Aha idea comments'
 MigrationUtilities.create_aha_comments(aha_api, fallback_user)
 
 p 'Starting creation of Aha endorsements (votes)'
-MigrationUtilities.create_aha_endorsements(aha_api, fallback_user)
+MigrationUtilities.create_aha_endorsements(aha_api, fallback_user, config['aha_idea_portal_id'])
 
 p 'Starting creation of Aha proxy endorsements (proxy votes)'
 MigrationUtilities.create_aha_sf_proxy_endorsements(aha_api, sf_api, fallback_user, config['sf_subdomain'])
 
 p 'Merge relevant Aha ideas together'
-merge_aha_ideas(aha_api)
+MigrationUtilities.merge_aha_ideas(aha_api)
 
 p 'Migration complete!'
