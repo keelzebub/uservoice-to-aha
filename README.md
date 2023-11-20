@@ -28,11 +28,12 @@ Running this script will do a few key things:
 - Create a fallback user that will be used in the instance that a contact doesn't exist
   - The fallback user should exist in Salesforce and also as an Aha portal user.
 
-### Setup
+### Running the Migration
 - Install the required gems: `bundle install`
 - Fill out the configuration details (see the "Configuration" section below)
 - Run the script: `ruby ./migration.rb`
 
+After the script finishes running, navigate to the Salesforce integration in Aha and trigger a record update to sync all mapped from Salesforce (Account Settings -> Integrations -> [your Salesforce Integration] -> Update records).
 
 ### Configuration
 Copy `config-example.yml` to `config.yml` and fill out the configuration items in `config.yml`.
